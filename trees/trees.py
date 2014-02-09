@@ -13,6 +13,8 @@ class Tree(object):
     def __init__(self):
         object.__setattr__(self, "_leaves", {})
         object.__setattr__(self, "_nodes", {})
+        object.__setattr__(self, "_freeze_", False)
+        object.__setattr__(self, "_freeze_struct_", False)
 
     def _copy(self, deep=False):
         """convenience copy method
@@ -35,6 +37,10 @@ class Tree(object):
         :raise KeyError:  if a node or leaf already exists with this name,
                           and overwrite is False
         """
+        if self._freeze_:
+            raise ValueError("Can't add a node to a frozen tree")
+        if self._freeze_struct_:
+            raise ValueError("Can't add a node to a tree whose structure is frozen")
         self._check_name(name)
         path = name.split('.', 1)
         parent_node = self
@@ -86,15 +92,24 @@ class Tree(object):
 
         :param key:  must be a string, and can't start with an underscore.
         """
+        if self._freeze_:
+            raise ValueError("Can't modify a frozen tree")
         if key == '_newnode':
             return self._node(value)
         self._check_name(key)
+        if self._freeze_struct_ and key not in self._leaves:
+            raise ValueError("Can't modify the frozen structure of the tree")
         self._leaves[key] = value
 
     def __setitem__(self, key, value):
+        if self._freeze_:
+            raise ValueError("Can't modify a frozen tree")
         self._check_name(key)
         path = key.split('.', 1)
+
         if len(path) == 1:
+            if self._freeze_struct_ and key not in self._leaves:
+                raise ValueError("Can't modify the frozen structure of the tree")
             self._leaves[key] = value
         else:
             self._nodes[path[0]].__setitem__(path[1], value)
@@ -135,3 +150,28 @@ class Tree(object):
             yield e
         for e in self._nodes.__iter__():
             yield e
+
+    def _freeze(self, recursive=True):
+        object.__setattr__(self, "_freeze_", True)
+        if recursive:
+            for node in self._nodes.values():
+                node._freeze(recursive=True)
+
+    def _unfreeze(self, recursive=True):
+        object.__setattr__(self, "_freeze_", False)
+        if recursive:
+            for node in self._nodes.values():
+                node._unfreeze(recursive=True)
+
+    def _freeze_struct(self, recursive=True):
+        object.__setattr__(self, "_freeze_struct_", True)
+        if recursive:
+            for node in self._nodes.values():
+                node._freeze_struct(recursive=True)
+
+    def _unfreeze_struct(self, recursive=True):
+        object.__setattr__(self, "_freeze_struct_", False)
+        if recursive:
+            for node in self._nodes.values():
+                node._unfreeze_struct(recursive=True)
+
