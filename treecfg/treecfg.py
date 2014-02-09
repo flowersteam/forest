@@ -32,6 +32,9 @@ class TreeCfg(object):
     def __getattr__(self, key):
         return self._data[key]
 
+    def __getitem__(self, key):
+        return self.__getattr__(key)
+
     def __setattr__(self, key, value):
         """
         Set a new item in the tree.
@@ -42,3 +45,7 @@ class TreeCfg(object):
             return self._node(value)
         self._check_name(key)
         self._data[key] = value
+
+    def __setitem__(self, key, value):
+        self.__setattr__(key, value)
+

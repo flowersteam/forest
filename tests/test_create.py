@@ -29,3 +29,16 @@ class TestCreate(unittest.TestCase):
         with self.assertRaises(KeyError):
             tc.a.b
 
+class TestItem(unittest.TestCase):
+
+    def test_item(self):
+        tc = treecfg.TreeCfg()
+        tc._newnode = 'a'
+
+        tc.a['b'] = 1
+        self.assertEqual(tc.a.b, 1)
+        self.assertEqual(tc.a['b'], 1)
+
+        tc.a.b = 2
+        self.assertEqual(tc.a.b, 2)
+        self.assertEqual(tc.a['b'], 2)
