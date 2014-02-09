@@ -42,3 +42,17 @@ class TestItem(unittest.TestCase):
         tc.a.b = 2
         self.assertEqual(tc.a.b, 2)
         self.assertEqual(tc.a['b'], 2)
+
+    def test_del(self):
+        tc = treecfg.TreeCfg()
+        tc._newnode = 'a'
+
+        tc.a.b = 2
+        del tc.a['b']
+        with self.assertRaises(KeyError):
+            tc.a.b
+
+        tc.a.c = 2
+        del tc.a.c
+        with self.assertRaises(KeyError):
+            tc.a.c

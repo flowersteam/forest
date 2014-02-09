@@ -49,3 +49,14 @@ class TreeCfg(object):
     def __setitem__(self, key, value):
         self.__setattr__(key, value)
 
+    def __len__(self):
+        return len(self._data)
+
+    def __contains__(self, key):
+        return key in self._data
+
+    def __delitem__(self, key):
+        del self._data[key]
+
+    def __delattr__(self, key):
+        return self.__delitem__(key)
