@@ -1,1 +1,1 @@
-from treecfg import TreeCfg
+from .treecfg import TreeCfg

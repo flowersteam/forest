@@ -1,15 +1,25 @@
+"""
+A tree module with dynamic attribute interface.
+"""
+
 import copy
 
 class TreeCfg(object):
+    """
+    A TreeCfg is a set of elements, some of which are other TreeCfg.
+    """
 
-    def __init__(self, tc=None):
+    def __init__(self):
         object.__setattr__(self, "_data", {})
 
-    def _deepcopy(self, tc):
-        return copy.deepcopy(tc)
+    def _copy(self, deep=False):
+        """convenience copy method
 
-    def _copy(self, tc):
-        return copy.copy(tc)
+        :param deep:  if True, perform a deep copy
+        """
+        if deep:
+            return copy.deepcopy(self)
+        return copy.copy(self)
 
     def _node(self, name, override=False):
         """
@@ -20,14 +30,18 @@ class TreeCfg(object):
         """
         self._check_name(name)
         if not override and name in self._data:
-            raise KeyError("an element with this name ({}) is already present in the tree".format(name))
+            raise KeyError(("an element with this name ({}) is already present"
+                            " in the tree").format(name))
         self._data[name] = TreeCfg()
 
-    def _check_name(self, name):
+    @staticmethod
+    def _check_name(name):
+        """filter acceptable element names"""
         try:
             assert type(name) is str and name[0] != '_'
         except (AssertionError, IndexError):
-            raise ValueError("element names should not start with an underscore, {} was provided".format(key))
+            raise ValueError(("element names should not start with an "
+                              "underscore, {} was provided").format(name))
 
     def __getattr__(self, key):
         return self._data[key]
