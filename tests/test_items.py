@@ -2,12 +2,12 @@ from __future__ import print_function, division
 import unittest
 
 import env
-import treecfg
+import trees
 
 class TestItem(unittest.TestCase):
 
     def test_item(self):
-        tc = treecfg.TreeCfg()
+        tc = trees.Tree()
         tc._newnode = 'a'
 
         tc.a['b'] = 1
@@ -19,7 +19,7 @@ class TestItem(unittest.TestCase):
         self.assertEqual(tc.a['b'], 2)
 
     def test_del(self):
-        tc = treecfg.TreeCfg()
+        tc = trees.Tree()
         tc._newnode = 'a'
 
         tc.a.b = 2
@@ -36,7 +36,7 @@ class TestItem(unittest.TestCase):
 class TestNestedItem(unittest.TestCase):
 
     def test_nestitem(self):
-        tc = treecfg.TreeCfg()
+        tc = trees.Tree()
 
         with self.assertRaises(KeyError):
             tc['a.b'] = 1

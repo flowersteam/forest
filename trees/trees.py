@@ -1,13 +1,13 @@
 """
-A tree module with dynamic attribute interface.
+A tree structure with dynamic attribute interface.
 """
 from __future__ import print_function, division
 
 import copy
 
-class TreeCfg(object):
+class Tree(object):
     """
-    A TreeCfg is a set of elements, some of which are other TreeCfg.
+    A Tree is a set of elements, some of which are other trees.
     """
 
     def __init__(self):
@@ -40,7 +40,7 @@ class TreeCfg(object):
         parent_node = self
         while len(path) == 2:
             if nested and path[0] not in parent_node._nodes:
-                parent_node._nodes[path[0]] = TreeCfg()
+                parent_node._nodes[path[0]] = Tree()
             parent_node = parent_node._nodes[path[0]]
             path = path[1].split('.', 1)
 
@@ -55,7 +55,7 @@ class TreeCfg(object):
             else:
                 del self._leaves[path[0]]
 
-        parent_node._nodes[path[0]] = TreeCfg()
+        parent_node._nodes[path[0]] = Tree()
 
     @staticmethod
     def _check_name(name):
