@@ -92,7 +92,11 @@ class TreeCfg(object):
 
     def __contains__(self, key):
         self._check_name(key)
-        return key in self._data
+        path = key.split('.', 1)
+        if len(path) == 1:
+            return key in self._data
+        else:
+            return path[0] in self._data and path[1] in self._data[path[0]]
 
     def __delitem__(self, key):
         self._check_name(key)
