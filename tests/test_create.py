@@ -18,7 +18,7 @@ class TestCreate(unittest.TestCase):
         tc._node('a')
         tc.a.b = 1
 
-        tc._node('a', override=True)
+        tc._node('a', overwrite=True)
 
         with self.assertRaises(KeyError):
             tc.a.b

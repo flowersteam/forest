@@ -11,7 +11,8 @@ class TreeCfg(object):
     """
 
     def __init__(self):
-        object.__setattr__(self, "_data", {})
+        object.__setattr__(self, "_leaves", {})
+        object.__setattr__(self, "_nodes", {})
 
     def _copy(self, deep=False):
         """convenience copy method
@@ -22,31 +23,39 @@ class TreeCfg(object):
             return copy.deepcopy(self)
         return copy.copy(self)
 
-    def _node(self, name, override=False, prefix=True):
+    def _node(self, name, overwrite=False, nested=True):
         """
         Create a new node in the tree. Any node is a fully independent tree.
         Can create nested node in one call
 
         :param name:      the name of the node
-        :param prefix:    if True, create intermediate nodes as needed.
+        :param nested:    if True, create intermediate nodes as needed.
                           Note that if override is True, existing intermediate nodes
                           will not be recreated.
-        :raise KeyError:  if the node already exists, and override is False
+        :raise KeyError:  if a node or leaf already exists with this name,
+                          and overwrite is False
         """
         self._check_name(name)
         path = name.split('.', 1)
         parent_node = self
         while len(path) == 2:
-            if prefix and path[0] not in parent_node._data:
-                parent_node._data[path[0]] = TreeCfg()
-            parent_node = parent_node._data[path[0]]
+            if nested and path[0] not in parent_node._nodes:
+                parent_node._nodes[path[0]] = TreeCfg()
+            parent_node = parent_node._nodes[path[0]]
             path = path[1].split('.', 1)
 
 
-        if not override and path[0] in parent_node._data:
-            raise KeyError(("an element with this name ({}) is already present"
-                            " in the tree").format(path[0]))
-        parent_node._data[path[0]] = TreeCfg()
+        if not overwrite and path[0] in parent_node._nodes:
+            raise KeyError(("an node with this name ({}) is already present"
+                            " in the tree").format(name))
+        if path[0] in parent_node._leaves:
+            if not overwrite:
+                raise KeyError(("an leaf with this name ({}) is already present"
+                                " in the tree").format(name))
+            else:
+                del self._leaves[path[0]]
+
+        parent_node._nodes[path[0]] = TreeCfg()
 
     @staticmethod
     def _check_name(name):
@@ -58,15 +67,18 @@ class TreeCfg(object):
                               "underscore, {} was provided").format(name))
 
     def __getattr__(self, key):
-        return self._data[key]
+        try:
+            return self._nodes[key]
+        except KeyError:
+            return self._leaves[key]
 
     def __getitem__(self, key):
         self._check_name(key)
         path = key.split('.', 1)
         if len(path) == 1:
-            return self._data[key]
+            return self.__getattr__(key)
         else:
-            return self._data[path[0]].__getitem__(path[1])
+            return self._nodes[path[0]].__getitem__(path[1])
 
     def __setattr__(self, key, value):
         """
@@ -77,35 +89,49 @@ class TreeCfg(object):
         if key == '_newnode':
             return self._node(value)
         self._check_name(key)
-        self._data[key] = value # key cannot contains dots here
+        self._leaves[key] = value
 
     def __setitem__(self, key, value):
         self._check_name(key)
         path = key.split('.', 1)
         if len(path) == 1:
-            self._data[key] = value
+            self._leaves[key] = value
         else:
-            self._data[path[0]].__setitem__(path[1], value)
+            self._nodes[path[0]].__setitem__(path[1], value)
 
     def __len__(self):
-        return len(self._data)
+        """Return the number of direct nodes and leaves"""
+        return len(self._nodes) + len(self._leaves)
 
     def __contains__(self, key):
         self._check_name(key)
         path = key.split('.', 1)
         if len(path) == 1:
-            return key in self._data
+            return key in self._leaves or key in self._leaves
         else:
-            return path[0] in self._data and path[1] in self._data[path[0]]
+            return path[0] in self._nodes and path[1] in self._nodes[path[0]]
 
     def __delitem__(self, key):
         self._check_name(key)
         path = key.split('.', 1)
         if len(path) == 1:
-            del self._data[key]
+            try:
+                del self._leaves[key]
+            except KeyError:
+                del self._nodes[key]
         else:
-            return self._data[path[0]].__delitem__(path[1])
+            return self._nodes[path[0]].__delitem__(path[1])
 
     def __delattr__(self, key):
         self._check_name(key)
-        del self._data[key]
+        try:
+            del self._leaves[key]
+        except KeyError:
+            del self._nodes[key]
+
+    def __iter__(self):
+        """Iter over non-nested attributes."""
+        for e in self._leaves.__iter__():
+            yield e
+        for e in self._nodes.__iter__():
+            yield e
