@@ -13,6 +13,7 @@ class Tree(object):
     def __init__(self):
         object.__setattr__(self, "_leaves", {})
         object.__setattr__(self, "_instance_check", {})
+        object.__setattr__(self, "_validate_check", {})
         object.__setattr__(self, "_branches", {})
         object.__setattr__(self, "_freeze_", False)
         object.__setattr__(self, "_freeze_struct_", False)
@@ -59,6 +60,9 @@ class Tree(object):
     def _isinstance(self, name, cls):
         self._instance_check[name] = cls
 
+    def _validate(self, name, validate_function):
+        self._validate_check[name] = validate_function
+
     @staticmethod
     def _check_name(name):
         """filter acceptable element names"""
@@ -101,6 +105,11 @@ class Tree(object):
                 raise TypeError(("value for leaf {} must be an instance of {};"
                                  " got {} instead.").format(key,
                                  self._instance_check[key], type(value))) # TODO correct relative path error
+        if key in self._validate_check:
+            if not self._validate_check[key](value):
+                raise TypeError(("value for leaf {} did not pass user-defined "
+                                 "validating function").format(key)) # TODO correct relative path error
+
         self._leaves[key] = value
 
     def __setitem__(self, key, value):
