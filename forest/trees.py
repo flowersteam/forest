@@ -12,6 +12,7 @@ class Tree(object):
 
     def __init__(self):
         object.__setattr__(self, "_leaves", {})
+        object.__setattr__(self, "_instance_check", {})
         object.__setattr__(self, "_branches", {})
         object.__setattr__(self, "_freeze_", False)
         object.__setattr__(self, "_freeze_struct_", False)
@@ -55,6 +56,9 @@ class Tree(object):
 
         return self._branches[path[0]]
 
+    def _isinstance(self, name, cls):
+        self._instance_check[name] = cls
+
     @staticmethod
     def _check_name(name):
         """filter acceptable element names"""
@@ -92,6 +96,11 @@ class Tree(object):
         self._check_name(key)
         if self._freeze_struct_ and key not in self._leaves:
             raise ValueError("Can't modify the frozen structure of the tree")
+        if key in self._instance_check:
+            if not isinstance(value, self._instance_check[key]):
+                raise TypeError(("value for leaf {} must be an instance of {};"
+                                 " got {} instead.").format(key,
+                                 self._instance_check[key], type(value))) # TODO correct relative path error
         self._leaves[key] = value
 
     def __setitem__(self, key, value):
@@ -101,9 +110,7 @@ class Tree(object):
         path = key.split('.', 1)
 
         if len(path) == 1:
-            if self._freeze_struct_ and key not in self._leaves:
-                raise ValueError("Can't modify the frozen structure of the tree")
-            self._leaves[key] = value
+            self.__setattr__(key, value)
         else:
             self._branches[path[0]].__setitem__(path[1], value)
 
