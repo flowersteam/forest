@@ -18,8 +18,10 @@ class TestCreate(unittest.TestCase):
         tc._branch('a')
         tc.a.b = 1
 
-        with self.assertRaises(ValueError):
-            tc._branch('a')
+    def test_settree(self):
+        tc = forest.Tree()
+        tc.a = forest.Tree()
+        tc.a.b = 1
 
     def test_nestedbranch(self):
         tc = forest.Tree()
@@ -30,3 +32,4 @@ class TestCreate(unittest.TestCase):
         tc._branch('a.b.defg.hc.i')
         tc.a.b.defg.hc.i.c = 3
         self.assertEqual(tc.a.b.defg.hc.i.c, 3)
+        self.assertEqual(tc.a.b.c, 1)

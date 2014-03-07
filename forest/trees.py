@@ -24,19 +24,39 @@ class Tree(object):
         :param deep:  if True, perform a deep copy
         """
         if deep:
-            return copy.deepcopy(self)
-        return copy.copy(self)
+            return self.__deepcopy__()
+        return self.__copy__()
+
+    def __copy__(self):
+        new_tree = Tree()
+        object.__setattr__(new_tree, "_leaves", self._leaves)
+        object.__setattr__(new_tree, "_instance_check", self._instance_check)
+        object.__setattr__(new_tree, "_validate_check", self._validate_check)
+        object.__setattr__(new_tree, "_branches", self._branches)
+        object.__setattr__(new_tree, "_freeze_", self._freeze_)
+        object.__setattr__(new_tree, "_freeze_struct_", self._freeze_struct_)
+        return new_tree
+
+    def __deepcopy__(self):
+        new_tree = Tree()
+        object.__setattr__(new_tree, "_leaves", copy.deepcopy(self._leaves))
+        object.__setattr__(new_tree, "_instance_check", copy.deepcopy(self._instance_check))
+        object.__setattr__(new_tree, "_validate_check", copy.deepcopy(self._validate_check))
+        object.__setattr__(new_tree, "_branches", {key: b.__deepcopy__() for key, b in self._branches.items()})
+        object.__setattr__(new_tree, "_freeze_", self._freeze_)
+        object.__setattr__(new_tree, "_freeze_struct_", self._freeze_struct_)
+        return new_tree
 
     def _branch(self, name, overwrite=False, nested=True):
         """
-        Create a new branch in the tree. Any branch is a fully independent tree.
-        Can create nested branch in one call
+        Create a new branch in the tree if it does not already exists.
+        Can create nested branches.
 
         :param name:      the name of the branch
         :param nested:    if True, create intermediate branchs as needed.
                           Note that if override is True, existing intermediate branchs
                           will not be recreated.
-        :raise KeyError:  if a branch or leaf already exists with this name
+        :raise KeyError:  if leaf already exists with this name
         """
         if self._freeze_:
             raise ValueError("Can't add a branch to a frozen tree")
@@ -47,11 +67,13 @@ class Tree(object):
 
         if len(path) == 2 and (not nested) and path[0] not in self._branches:
             raise ValueError("Can't created non-existent intermediary branches with nested = False")
-        if path[0] in self._branches:
+        if path[0] in self._leaves:
             if len(path) == 1:
-                raise ValueError("A branch named '{}' already exists.".format(path[0]))
+                raise ValueError("Can't create a branch named '{}': a leaf "
+                                 "with that name already exists.".format(path[0]))
         else:
-            self._branches[path[0]] = Tree()
+            if path[0] not in self._branches.keys():
+                self._branches[path[0]] = Tree()
         if len(path) == 2:
             self._branches[path[0]]._branch(path[1], overwrite=overwrite, nested=nested)
 
@@ -80,6 +102,7 @@ class Tree(object):
             return self._branches[key]
         except KeyError:
             return self._leaves[key]
+        return
 
     def __getitem__(self, key):
         self._check_name(key)
@@ -98,7 +121,7 @@ class Tree(object):
         if self._freeze_:
             raise ValueError("Can't modify a frozen tree")
         self._check_name(key)
-        if self._freeze_struct_ and key not in self._leaves:
+        if self._freeze_struct_ and key not in self._leaves and key not in self._branches:
             raise ValueError("Can't modify the frozen structure of the tree")
         if key in self._instance_check:
             if not isinstance(value, self._instance_check[key]):
@@ -110,7 +133,16 @@ class Tree(object):
                 raise TypeError(("value for leaf {} did not pass user-defined "
                                  "validating function").format(key)) # TODO correct relative path error
 
-        self._leaves[key] = value
+        if isinstance(value, Tree):
+            if key in self._leaves:
+                raise ValueError('branch cannot be added: a leaf already '
+                                 'exists with name {}'.format(key))
+            self._branches[key] = value
+        else:
+            if key in self._branches:
+                raise ValueError('leaf cannot be added: a branch already '
+                                 'exists with name {}'.format(key))
+            self._leaves[key] = value
 
     def __setitem__(self, key, value):
         if self._freeze_:
@@ -220,4 +252,17 @@ class Tree(object):
             raise NotImplementedError
             for key, value in tree.items():
                 pass
+
+    def _lines(self):
+        lines = []
+        for leafname, leaf in self._leaves.items():
+            lines.append('{}={}'.format(leafname, leaf))
+        for branchname, branch in self._branches.items():
+            for line in branch._lines():
+                lines.append('{}.{}'.format(branchname, line))
+        return lines
+
+    def _print(self):
+        for line in self._lines():
+            print(line)
 
