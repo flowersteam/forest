@@ -11,6 +11,9 @@ class TestTypeCheck(unittest.TestCase):
         tc._branch('a')
         tc.a._isinstance('b', int)
         tc.a.b = 1
+        tc.a._isinstance('c', (int, float))
+        tc.a.c = 1
+        tc.a.c = 1.5
 
         with self.assertRaises(TypeError):
             tc.a.b = 'abc'
