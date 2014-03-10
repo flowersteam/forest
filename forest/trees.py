@@ -24,11 +24,11 @@ class Tree(object):
             self._update(existing, overwrite=True)
 
     @classmethod
-    def _from_file(self, filename):
+    def _from_file(cls, filename):
         with open(filename, 'r') as f:
             lines = f.readlines()
         d = {}
-        for line in lines.split('\n'):
+        for line in lines:
             try:
                 key, value = line.split('=')
                 key = key.strip()
@@ -36,12 +36,13 @@ class Tree(object):
                 d[key] = value
             except ValueError:
                 pass
-        self._update(d, overwrite=True)
+        t = cls()
+        t._update(d, overwrite=True)
+        return t
 
     def _to_file(self, filename):
         with open(filename, 'w') as f:
-            for line in self._lines():
-                f.write(f)
+            f.write('\n'.join(line for line in self._lines()))
 
     def _copy(self, deep=False):
         """convenience copy method
