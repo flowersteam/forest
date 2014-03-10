@@ -56,3 +56,13 @@ class TestUpdate(unittest.TestCase):
         with self.assertRaises(ValueError):
             t2._update(t)
 
+    def test_update_dict(self):
+        d = {'b'        : 2,
+             'abc.cde.d': 3,
+             'abc.f'    : 4}
+        t = forest.Tree()
+        t._update(d, overwrite=True)
+
+        for key, value in d.items():
+            self.assertEqual(t[key], value)
+        self.assertEqual(t.abc.cde.d, 3)

@@ -39,3 +39,8 @@ class TestCreate(unittest.TestCase):
         tc['a.b.c'] = 1
         self.assertEqual(tc.a.b.c, 1)
 
+    def test_init(self):
+        t = forest.Tree({'a': 1, 'b.c':2})
+
+        self.assertEqual(t.a, 1)
+        self.assertEqual(t.b.c, 2)

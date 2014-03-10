@@ -10,13 +10,18 @@ class Tree(object):
     A Tree is a set of elements, some of which are other trees.
     """
 
-    def __init__(self):
+    def __init__(self, existing=None):
+        """
+        :param existing: an existing tree or dictionary.
+        """
         object.__setattr__(self, "_leaves", {})
         object.__setattr__(self, "_instance_check", {})
         object.__setattr__(self, "_validate_check", {})
         object.__setattr__(self, "_branches", {})
         object.__setattr__(self, "_freeze_", False)
         object.__setattr__(self, "_freeze_struct_", False)
+        if existing is not None:
+            self._update(existing, overwrite=True)
 
     def _copy(self, deep=False):
         """convenience copy method
@@ -153,7 +158,9 @@ class Tree(object):
         if len(path) == 1:
             self.__setattr__(key, value)
         else:
-            if path[0] not in self._branches.keys():
+            if path[0] not in self._branches:
+                # TODO correct message branch name
+                assert path[0] not in self._leaves, "Can't create branch {}, a leaf already exists with that name".format(path[0])
                 self._branches[path[0]] = Tree()
             self._branches[path[0]].__setitem__(path[1], value)
 
@@ -251,9 +258,10 @@ class Tree(object):
                     self._branch(branchname)
                 self._branches[branchname]._update(branch, overwrite=overwrite)
         else:
-            raise NotImplementedError
             for key, value in tree.items():
-                pass
+                if not overwrite:
+                    raise NotImplementedError
+                self[key] = value
 
     def _lines(self):
         lines = []
@@ -265,14 +273,17 @@ class Tree(object):
         return lines
 
     def _load(self, lines):
+        d = {}
         for line in lines.split('\n'):
             try:
                 key, value = line.split('=')
                 key = key.strip()
                 value = eval(value.strip(), {}, {})
-                self.d[key] = value
+                d[key] = value
             except ValueError:
                 pass
+        self._update(d, overwrite=True)
+
 
     def __str__(self):
         return '\n'.join(line for line in self._lines)
