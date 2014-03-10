@@ -235,8 +235,6 @@ class Tree(object):
         return (self._leaves == tree._leaves
                 and self._branches == tree._branches)
 
-
-
     def _freeze(self, recursive=True):
         object.__setattr__(self, "_freeze_", True)
         if recursive:
@@ -288,10 +286,13 @@ class Tree(object):
                     self._branch(branchname)
                 self._branches[branchname]._update(branch, overwrite=overwrite)
         else:
-            for key, value in tree.items():
-                if not overwrite:
-                    raise NotImplementedError
-                self[key] = value
+            if not overwrite:
+                for key, value in tree.items():
+                    if not key in self:
+                        self[key] = value
+            else:
+                for key, value in tree.items():
+                    self[key] = value
 
     def _lines(self):
         lines = []
