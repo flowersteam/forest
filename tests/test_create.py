@@ -65,6 +65,18 @@ class TestCreate(unittest.TestCase):
         self.assertEqual(tc._get('a.b.c', 2), 1)
         self.assertEqual(tc._get('a.b.d', 2), 2)
 
+    def test_setdefault(self):
+        tc = forest.Tree()
+        tc._branch('a.b')
+        tc.a.b.c = 1
+        tc.a._setdefault('b.c', 2)
+        tc.a._setdefault('e.c', 4)
+
+        self.assertEqual(tc.a.b.c, 1)
+        self.assertEqual(tc.a.e.c, 4)
+
+
+
     def test_in(self):
         tc = forest.Tree()
         tc._branch('a.b')
