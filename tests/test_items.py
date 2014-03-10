@@ -4,6 +4,7 @@ import unittest
 import env
 import forest
 
+
 class TestItem(unittest.TestCase):
 
     def test_item(self):
@@ -31,6 +32,9 @@ class TestItem(unittest.TestCase):
         del tc.a.c
         with self.assertRaises(KeyError):
             tc.a.c
+
+        with self.assertRaises(AttributeError):
+            tc._inexistent_method
 
 
 class TestNestedItem(unittest.TestCase):

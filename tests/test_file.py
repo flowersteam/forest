@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 import unittest
+import pickle
 
 import env
 import forest
@@ -59,3 +60,27 @@ class TestFiles(unittest.TestCase):
         t2 = forest.Tree._from_file(filename)
 
         self.assertEqual(tc, t2)
+
+class TestPickle(unittest.TestCase):
+
+    def test_pickle(self):
+        t = forest.Tree()
+        t.a = forest.Tree()
+        t.a.b = 1
+        t.a.c = '2'
+        t.a._branch('efg')
+        t.a.efg.h = [2, 3, 4]
+        t['b.farm'] = None
+
+        s = pickle.dumps(t)
+        t2 = pickle.loads(s)
+        self.assertEqual(t, t2)
+
+        filename = tempname()
+        with open(filename, 'w') as f:
+            pickle.dump(t, f)
+
+        with open(filename, 'r') as f:
+            t2 = pickle.load(f)
+
+        self.assertEqual(t, t2)

@@ -131,10 +131,13 @@ class Tree(object):
 
     def __getattr__(self, key):
         try:
-            return self._branches[key]
-        except KeyError:
-            return self._leaves[key]
-        return
+            self._check_name(key)
+            try:
+                return self._branches[key]
+            except KeyError:
+                return self._leaves[key]
+        except ValueError:
+            object.__getattribute__(self, key)
 
     def __getitem__(self, key):
         self._check_name(key)
@@ -293,7 +296,11 @@ class Tree(object):
     def _lines(self):
         lines = []
         for leafname, leaf in self._leaves.items():
-            lines.append('{}={}'.format(leafname, leaf.__repr__()))
+            try:
+                r = leaf.__repr__()
+            except TypeError:
+                r = leaf
+            lines.append('{}={}'.format(leafname, r))
         for branchname, branch in self._branches.items():
             for line in branch._lines():
                 lines.append('{}.{}'.format(branchname, line))
