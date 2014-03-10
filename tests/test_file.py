@@ -26,7 +26,7 @@ class TestFiles(unittest.TestCase):
     def test_save(self):
         tc = forest.Tree()
         tc._branch('a')
-        tc.a.b = 1
+        tc.a.b = '1'
         tc.a.d = [1, 2, 3]
 
         filename = tempname()
@@ -34,11 +34,11 @@ class TestFiles(unittest.TestCase):
 
         with open(filename, 'r') as f:
             s = f.read()
-        self.assertEqual(s, 'a.b=1\na.d=[1, 2, 3]')
 
+        self.assertEqual(s, 'a.b=\'1\'\na.d=[1, 2, 3]')
         os.unlink(filename)
 
-    def test_save(self):
+    def test_load(self):
         filename = tempname()
         with open(filename, 'w') as f:
             s = f.write('a.b=1\na.d=[1, 2, 3]')

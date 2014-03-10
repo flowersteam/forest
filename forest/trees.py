@@ -287,7 +287,7 @@ class Tree(object):
     def _lines(self):
         lines = []
         for leafname, leaf in self._leaves.items():
-            lines.append('{}={}'.format(leafname, leaf))
+            lines.append('{}={}'.format(leafname, leaf.__repr__()))
         for branchname, branch in self._branches.items():
             for line in branch._lines():
                 lines.append('{}.{}'.format(branchname, line))
