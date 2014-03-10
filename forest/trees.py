@@ -40,6 +40,12 @@ class Tree(object):
         t._update(d, overwrite=True)
         return t
 
+    def _get(self, key, default):
+        try:
+            return self.__getitem__(key)
+        except KeyError:
+            return default
+
     def _to_file(self, filename):
         with open(filename, 'w') as f:
             f.write('\n'.join(line for line in self._lines()))

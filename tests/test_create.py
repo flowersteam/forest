@@ -57,3 +57,12 @@ class TestCreate(unittest.TestCase):
         t3 = tc._copy(deep=True)
         self.assertEqual(tc, t3)
 
+    def test_get(self):
+        tc = forest.Tree()
+        tc._branch('a.b')
+        tc.a.b.c = 1
+
+
+        self.assertEqual(tc._get('a.b.c', 2), 1)
+        self.assertEqual(tc._get('a.b.d', 2), 2)
+
