@@ -38,10 +38,6 @@ class TestNestedItem(unittest.TestCase):
     def test_nestitem(self):
         tc = forest.Tree()
 
-        with self.assertRaises(KeyError):
-            tc['a.b'] = 1
-
-        tc._branch('a')
         tc['a.b'] = 1
 
         self.assertEqual(tc.a.b, 1)

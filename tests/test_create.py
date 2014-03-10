@@ -33,3 +33,9 @@ class TestCreate(unittest.TestCase):
         tc.a.b.defg.hc.i.c = 3
         self.assertEqual(tc.a.b.defg.hc.i.c, 3)
         self.assertEqual(tc.a.b.c, 1)
+
+    def test_setitem(self):
+        tc = forest.Tree()
+        tc['a.b.c'] = 1
+        self.assertEqual(tc.a.b.c, 1)
+

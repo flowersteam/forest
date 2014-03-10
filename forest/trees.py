@@ -153,6 +153,8 @@ class Tree(object):
         if len(path) == 1:
             self.__setattr__(key, value)
         else:
+            if path[0] not in self._branches.keys():
+                self._branches[path[0]] = Tree()
             self._branches[path[0]].__setitem__(path[1], value)
 
     def __len__(self):
@@ -262,7 +264,15 @@ class Tree(object):
                 lines.append('{}.{}'.format(branchname, line))
         return lines
 
-    def _print(self):
-        for line in self._lines():
-            print(line)
+    def _load(self, lines):
+        for line in lines.split('\n'):
+            try:
+                key, value = line.split('=')
+                key = key.strip()
+                value = eval(value.strip(), {}, {})
+                self.d[key] = value
+            except ValueError:
+                pass
 
+    def __str__(self):
+        return '\n'.join(line for line in self._lines)
