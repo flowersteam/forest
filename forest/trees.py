@@ -23,6 +23,26 @@ class Tree(object):
         if existing is not None:
             self._update(existing, overwrite=True)
 
+    @classmethod
+    def _from_file(self, filename):
+        with open(filename, 'r') as f:
+            lines = f.readlines()
+        d = {}
+        for line in lines.split('\n'):
+            try:
+                key, value = line.split('=')
+                key = key.strip()
+                value = eval(value.strip(), {}, {})
+                d[key] = value
+            except ValueError:
+                pass
+        self._update(d, overwrite=True)
+
+    def _to_file(self, filename):
+        with open(filename, 'w') as f:
+            for line in self._lines():
+                f.write(f)
+
     def _copy(self, deep=False):
         """convenience copy method
 
@@ -272,18 +292,5 @@ class Tree(object):
                 lines.append('{}.{}'.format(branchname, line))
         return lines
 
-    def _load(self, lines):
-        d = {}
-        for line in lines.split('\n'):
-            try:
-                key, value = line.split('=')
-                key = key.strip()
-                value = eval(value.strip(), {}, {})
-                d[key] = value
-            except ValueError:
-                pass
-        self._update(d, overwrite=True)
-
-
     def __str__(self):
-        return '\n'.join(line for line in self._lines)
+        return '\n'.join(line for line in self._lines())
