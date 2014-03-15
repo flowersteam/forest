@@ -11,11 +11,11 @@
 
 ### Design
 
-`forest` has been designed to be easy to use while ensuring data integrity. It features many ways to protect the tree data against badly programmed piece of code. Because the main goal of the library authors was to ensure that their scientific experiments were correct, some of the design choices led to an characteristically unpythonic interface.
+`forest` has been designed to be easy to use while ensuring data integrity. It features many ways to protect the tree data against badly programmed piece of code. Because the main goal of the authors of the library was to ensure that their scientific experiments were correct, some of the design choices led to an characteristically unpythonic API.
 
 #### Tree branches have to be explicitely declared
 
-Is applies if you use to attribute interface. You can implicitly declare branch using the dict interface.
+Is applies only if you use the attribute interface. You can implicitly declare branch using the dict interface.
 
     import forest
 
@@ -24,16 +24,17 @@ Is applies if you use to attribute interface. You can implicitly declare branch 
     t._branch('experiment1')
     t.experiment1.duration = 3600.0     # attribute interface
     t['experiment2.duration'] = 1800.0  # dict interface
+    t.experiment3.duration = 7200.0     # raises KeyError
 
-#### Underscore are reserved to methods
+#### Underscores are reserved to methods
 
-Node and element names cannot start with an underscore. Inversely, all public methods start with an underscore. This ensure a clean separation between user-defined data and instance methods.
+Branches and leaves names cannot start with an underscore. Inversely, all public methods start with an underscore. This ensure a clean separation between user-defined data and instance methods.
 
 #### `Tree` is not a `dict`
 
-It is not inherited from `dict` either. `Tree` offers most of the dict methods, but is not a drop-in replacement since their names are all prefixed with an underscore : `_update`, `_get`, `_setdefault`, etc.
+`Tree` is not inherited from `dict` either. It offers most of the dict methods, but is not a drop-in replacement since their names are all prefixed with an underscore : `_update`, `_get`, `_setdefault`, etc.
 
-#### Value can be validated when they are set.
+#### Values can optionally be validated when they are set
 
 They can be validated either by their type:
 
