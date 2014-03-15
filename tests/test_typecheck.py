@@ -43,3 +43,40 @@ class TestTypeCheck(unittest.TestCase):
         tc.a.c = 150
         with self.assertRaises(TypeError):
             tc.a.c = -1
+
+    def test_check_tree(self):
+        tc = forest.Tree()
+        tc._branch('a')
+        tc.a._isinstance('c', (int, float))
+        def validate_b(value):
+            return 0 <= value <= 256
+        tc.a._validate('b', validate_b)
+
+        t2 = forest.Tree()
+        t2._branch('a')
+        t2.a.c = 2.0
+        t2.a.b = 50
+        t2._check(tc)
+
+        t2.a.b = 350
+        with self.assertRaises(TypeError):
+            t2._check(tc)
+
+        t2.a.b = 250
+        t2.a.c = '23'
+        with self.assertRaises(TypeError):
+            t2._check(tc)
+
+    def test_check_struct(self):
+        tc = forest.Tree()
+        tc._branch('a')
+
+        t2 = forest.Tree()
+        t2._branch('a')
+        t2._check(tc, struct=True)
+
+        t2._branch('b')
+        with self.assertRaises(TypeError):
+            t2._check(tc, struct=True)
+        with self.assertRaises(TypeError):
+            tc._check(t2, struct=True)

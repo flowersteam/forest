@@ -127,9 +127,20 @@ class Tree(object):
                 raise TypeError(("value for leaf {} did not pass user-defined "
                                  "validating function").format(name)) # TODO correct relative path error
 
-    def _check(self, tree):
-        """Check conformity with another tree type checks and validate functions"""
-        raise NotImplementedError
+    def _check(self, tree, struct=False):
+        """Check conformity with another tree type checks and validate functions
+
+        :param struct:      if True, verifies that both tree have the same branches
+        :raises TypeError:  if check fails
+        """
+        for key, leaf in self._leaves.items():
+            tree._check_value(key, leaf)
+        if struct and set(self._branches.keys()) != set(tree._branches.keys()):
+            diff = set(self._branches.keys()).symmetric_difference(set(tree._branches.keys()))
+            raise TypeError('({}) branches are not present in both trees'.format(diff)) # TODO: 2 differences instead of symmetric
+        for key, branch in self._branches.items():
+            if key in tree._branches:
+                branch._check(tree._branches[key], struct=struct)
 
     @staticmethod
     def _check_name(name):
