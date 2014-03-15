@@ -111,6 +111,26 @@ class Tree(object):
     def _validate(self, name, validate_function):
         self._validate_check[name] = validate_function
 
+    def _check_value(self, name, value):
+        """Check a value against defined instance and custom checks"""
+        if name in self._instance_check:
+            if not isinstance(value, self._instance_check[name]):
+                raise TypeError(("value for leaf {} must be an instance of {};"
+                                 " got {} instead.").format(name,
+                                 self._instance_check[name], type(value))) # TODO correct relative path error
+        if name in self._validate_check:
+            try:
+                check = self._validate_check[name](value)
+            except Exception:
+                check = False
+            if not check:
+                raise TypeError(("value for leaf {} did not pass user-defined "
+                                 "validating function").format(name)) # TODO correct relative path error
+
+    def _check(self, tree):
+        """Check conformity with another tree type checks and validate functions"""
+        raise NotImplementedError
+
     @staticmethod
     def _check_name(name):
         """filter acceptable element names"""
@@ -163,16 +183,7 @@ class Tree(object):
         self._check_name(key)
         if self._freeze_struct_ and key not in self._leaves and key not in self._branches:
             raise ValueError("Can't modify the frozen structure of the tree")
-        if key in self._instance_check:
-            if not isinstance(value, self._instance_check[key]):
-                raise TypeError(("value for leaf {} must be an instance of {};"
-                                 " got {} instead.").format(key,
-                                 self._instance_check[key], type(value))) # TODO correct relative path error
-        if key in self._validate_check:
-            if not self._validate_check[key](value):
-                raise TypeError(("value for leaf {} did not pass user-defined "
-                                 "validating function").format(key)) # TODO correct relative path error
-
+        self._check_value(key, value)
         if isinstance(value, Tree):
             if key in self._leaves:
                 raise ValueError('branch cannot be added: a leaf already '

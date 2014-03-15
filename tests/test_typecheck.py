@@ -24,12 +24,22 @@ class TestTypeCheck(unittest.TestCase):
     def test_validate(self):
         tc = forest.Tree()
         tc._branch('a')
-        def validate_a(value):
+
+        def validate_b(value):
             return 0 <= value <= 256
-        tc.a._validate('b', validate_a)
+        tc.a._validate('b', validate_b)
 
         tc.a.b = 150
         with self.assertRaises(TypeError):
             tc.a.b = -1
         with self.assertRaises(TypeError):
             tc.a.b = 1000
+
+        def validate_c(value):
+            assert 0 <= value <= 256
+            return True
+        tc.a._validate('c', validate_c)
+
+        tc.a.c = 150
+        with self.assertRaises(TypeError):
+            tc.a.c = -1

@@ -75,8 +75,6 @@ class TestCreate(unittest.TestCase):
         self.assertEqual(tc.a.b.c, 1)
         self.assertEqual(tc.a.e.c, 4)
 
-
-
     def test_in(self):
         tc = forest.Tree()
         tc._branch('a.b')
@@ -84,4 +82,3 @@ class TestCreate(unittest.TestCase):
 
         self.assertTrue('a.b.c' in tc)
         self.assertTrue(not 'a.b.d' in tc)
-
