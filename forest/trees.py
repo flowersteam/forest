@@ -334,7 +334,7 @@ class Tree(object):
         for leafname, leaf in self._leaves.items():
             try:
                 r = leaf.__repr__()
-            except TypeError:
+            except (AttributeError, TypeError):
                 r = leaf
             lines.append('{}={}'.format(leafname, r))
         for branchname, branch in self._branches.items():
