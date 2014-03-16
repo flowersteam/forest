@@ -21,6 +21,21 @@ class TestTypeCheck(unittest.TestCase):
         with self.assertRaises(TypeError):
             tc.a.b = 1.0
 
+    def test_subinstance(self):
+        tc = forest.Tree()
+        tc._branch('a')
+        tc._isinstance('a.b', int)
+        tc.a.b = 1
+        tc._isinstance('a.c', (int, float))
+        tc.a.c = 1
+        tc.a.c = 1.5
+
+        with self.assertRaises(TypeError):
+            tc.a.b = 'abc'
+
+        with self.assertRaises(TypeError):
+            tc.a.b = 1.0
+
     def test_validate(self):
         tc = forest.Tree()
         tc._branch('a')
@@ -43,6 +58,30 @@ class TestTypeCheck(unittest.TestCase):
         tc.a.c = 150
         with self.assertRaises(TypeError):
             tc.a.c = -1
+
+    def test_subvalidate(self):
+        tc = forest.Tree()
+        tc._branch('a')
+
+        def validate_b(value):
+            return 0 <= value <= 256
+        tc._validate('a.b', validate_b)
+
+        tc.a.b = 150
+        with self.assertRaises(TypeError):
+            tc.a.b = -1
+        with self.assertRaises(TypeError):
+            tc.a.b = 1000
+
+        def validate_c(value):
+            assert 0 <= value <= 256
+            return True
+        tc._validate('a.c', validate_c)
+
+        tc.a.c = 150
+        with self.assertRaises(TypeError):
+            tc.a.c = -1
+
 
     def test_check_tree(self):
         tc = forest.Tree()

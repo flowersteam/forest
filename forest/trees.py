@@ -106,10 +106,18 @@ class Tree(object):
         return self._branches[path[0]]
 
     def _isinstance(self, name, cls):
-        self._instance_check[name] = cls
+        path = name.split('.', 1)
+        if len(path) == 1:
+            self._instance_check[name] = cls
+        else:
+            self._branches[path[0]]._isinstance(path[1], cls)
 
     def _validate(self, name, validate_function):
-        self._validate_check[name] = validate_function
+        path = name.split('.', 1)
+        if len(path) == 1:
+            self._validate_check[name] = validate_function
+        else:
+            self._branches[path[0]]._validate(path[1], validate_function)
 
     def _check_value(self, name, value):
         """Check a value against defined instance and custom checks"""
