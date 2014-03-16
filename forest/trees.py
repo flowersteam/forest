@@ -20,6 +20,7 @@ class Tree(object):
         object.__setattr__(self, "_branches", {})
         object.__setattr__(self, "_freeze_", False)
         object.__setattr__(self, "_freeze_struct_", False)
+        object.__setattr__(self, "_strictmode", False)
         if existing is not None:
             self._update(existing, overwrite=True)
 
@@ -61,6 +62,7 @@ class Tree(object):
         object.__setattr__(new_tree, "_branches", self._branches)
         object.__setattr__(new_tree, "_freeze_", self._freeze_)
         object.__setattr__(new_tree, "_freeze_struct_", self._freeze_struct_)
+        object.__setattr__(new_tree, "_strictmode", self._strictmode)
         return new_tree
 
     def __deepcopy__(self):
@@ -71,6 +73,7 @@ class Tree(object):
         object.__setattr__(new_tree, "_branches", {key: b.__deepcopy__() for key, b in self._branches.items()})
         object.__setattr__(new_tree, "_freeze_", self._freeze_)
         object.__setattr__(new_tree, "_freeze_struct_", self._freeze_struct_)
+        object.__setattr__(new_tree, "_strictmode", self._strictmode)
         return new_tree
 
     def _branch(self, name, overwrite=False, nested=True):
@@ -120,13 +123,18 @@ class Tree(object):
             self._branches[path[0]]._validate(path[1], validate_function)
 
     def _check_value(self, name, value):
-        """Check a value against defined instance and custom checks"""
+        """Check a value against defined instance and custom checks
+        if the tree is strict, then a check must be defined
+        """
+        check_exists = False
         if name in self._instance_check:
+            check_exists = True
             if not isinstance(value, self._instance_check[name]):
                 raise TypeError(("value for leaf {} must be an instance of {};"
                                  " got {} instead.").format(name,
                                  self._instance_check[name], type(value))) # TODO correct relative path error
         if name in self._validate_check:
+            check_exists = True
             try:
                 check = self._validate_check[name](value)
             except Exception:
@@ -134,6 +142,13 @@ class Tree(object):
             if not check:
                 raise TypeError(("value for leaf {} did not pass user-defined "
                                  "validating function").format(name)) # TODO correct relative path error
+        if self._strictmode and not check_exists:
+            raise TypeError(("can't create new leaf '{}' in a strict tree without a "
+                             "type or validation function declared.").format(name)) # TODO correct relative path error
+
+
+    def _strict(self, state=True):
+        object.__setattr__(self, "_strictmode", state)
 
     def _check(self, tree, struct=False):
         """Check conformity with another tree type checks and validate functions

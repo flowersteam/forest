@@ -119,3 +119,17 @@ class TestTypeCheck(unittest.TestCase):
             t2._check(tc, struct=True)
         with self.assertRaises(TypeError):
             tc._check(t2, struct=True)
+
+    def test_check_struct(self):
+        t = forest.Tree()
+        t._strict()
+
+        t._isinstance('a', int)
+        t.a = 1
+        with self.assertRaises(TypeError):
+            t.b = 1
+
+        def validate_b(value):
+            return 0 <= value <= 256
+        t._validate('b', validate_b)
+        t.b = 1
