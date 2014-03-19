@@ -5,6 +5,10 @@ from __future__ import print_function, division
 
 import copy
 
+# a unique object
+_uid = object()
+
+
 class Tree(object):
     """
     A Tree is a set of elements, some of which are other trees.
@@ -14,13 +18,14 @@ class Tree(object):
         """
         :param existing: an existing tree or dictionary.
         """
-        object.__setattr__(self, "_leaves", {})
-        object.__setattr__(self, "_instance_check", {})
-        object.__setattr__(self, "_validate_check", {})
-        object.__setattr__(self, "_branches", {})
-        object.__setattr__(self, "_freeze_", False)
-        object.__setattr__(self, "_freeze_struct_", False)
-        object.__setattr__(self, "_strictmode", False)
+        object.__setattr__(self, '_leaves', {})
+        object.__setattr__(self, '_instance_check', {})
+        object.__setattr__(self, '_validate_check', {})
+        object.__setattr__(self, '_docstrings', {})
+        object.__setattr__(self, '_branches', {})
+        object.__setattr__(self, '_freeze_', False)
+        object.__setattr__(self, '_freeze_struct_', False)
+        object.__setattr__(self, '_strictmode', False)
         if existing is not None:
             self._update(existing, overwrite=True)
 
@@ -56,24 +61,24 @@ class Tree(object):
 
     def __copy__(self):
         new_tree = Tree()
-        object.__setattr__(new_tree, "_leaves", self._leaves)
-        object.__setattr__(new_tree, "_instance_check", self._instance_check)
-        object.__setattr__(new_tree, "_validate_check", self._validate_check)
-        object.__setattr__(new_tree, "_branches", self._branches)
-        object.__setattr__(new_tree, "_freeze_", self._freeze_)
-        object.__setattr__(new_tree, "_freeze_struct_", self._freeze_struct_)
-        object.__setattr__(new_tree, "_strictmode", self._strictmode)
+        object.__setattr__(new_tree, '_leaves', self._leaves)
+        object.__setattr__(new_tree, '_instance_check', self._instance_check)
+        object.__setattr__(new_tree, '_validate_check', self._validate_check)
+        object.__setattr__(new_tree, '_branches', self._branches)
+        object.__setattr__(new_tree, '_freeze_', self._freeze_)
+        object.__setattr__(new_tree, '_freeze_struct_', self._freeze_struct_)
+        object.__setattr__(new_tree, '_strictmode', self._strictmode)
         return new_tree
 
     def __deepcopy__(self):
         new_tree = Tree()
-        object.__setattr__(new_tree, "_leaves", copy.deepcopy(self._leaves))
-        object.__setattr__(new_tree, "_instance_check", copy.deepcopy(self._instance_check))
-        object.__setattr__(new_tree, "_validate_check", copy.deepcopy(self._validate_check))
-        object.__setattr__(new_tree, "_branches", {key: b.__deepcopy__() for key, b in self._branches.items()})
-        object.__setattr__(new_tree, "_freeze_", self._freeze_)
-        object.__setattr__(new_tree, "_freeze_struct_", self._freeze_struct_)
-        object.__setattr__(new_tree, "_strictmode", self._strictmode)
+        object.__setattr__(new_tree, '_leaves', copy.deepcopy(self._leaves))
+        object.__setattr__(new_tree, '_instance_check', copy.deepcopy(self._instance_check))
+        object.__setattr__(new_tree, '_validate_check', copy.deepcopy(self._validate_check))
+        object.__setattr__(new_tree, '_branches', {key: b.__deepcopy__() for key, b in self._branches.items()})
+        object.__setattr__(new_tree, '_freeze_', self._freeze_)
+        object.__setattr__(new_tree, '_freeze_struct_', self._freeze_struct_)
+        object.__setattr__(new_tree, '_strictmode', self._strictmode)
         return new_tree
 
     def _branch(self, name, overwrite=False, nested=True):
@@ -108,19 +113,37 @@ class Tree(object):
 
         return self._branches[path[0]]
 
-    def _isinstance(self, name, cls):
+    def _isinstance(self, name, cls=_uid):
         path = name.split('.', 1)
         if len(path) == 1:
-            self._instance_check[name] = cls
+            if cls is not _uid:
+                self._instance_check[name] = cls
+            return self._instance_check.get(name, None)
         else:
-            self._branches[path[0]]._isinstance(path[1], cls)
+            return self._branches[path[0]]._isinstance(path[1], cls)
 
-    def _validate(self, name, validate_function):
+    def _validate(self, name, validate=_uid):
         path = name.split('.', 1)
         if len(path) == 1:
-            self._validate_check[name] = validate_function
+            if validate is not _uid:
+                self._validate_check[name] = validate
+            return self._validate_check.get(name, None)
         else:
-            self._branches[path[0]]._validate(path[1], validate_function)
+            return self._branches[path[0]]._validate(path[1], validate)
+
+    def _docstring(self, name, docstring=_uid):
+        path = name.split('.', 1)
+        if len(path) == 1:
+            if docstring is not _uid:
+                self._docstrings[name] = docstring
+            return self._docstrings.get(name, None)
+        else:
+            return self._branches[path[0]]._docstring(path[1], docstring=docstring)
+
+    def _describe(self, name, docstring=_uid, instanceof=_uid, validate=_uid):
+        return (self._docstring(name, docstring),
+                self._isinstance(name, instanceof),
+                self._validate(name, validate))
 
     def _check_value(self, name, value):
         """Check a value against defined instance and custom checks
@@ -128,20 +151,22 @@ class Tree(object):
         """
         check_exists = False
         if name in self._instance_check:
-            check_exists = True
-            if not isinstance(value, self._instance_check[name]):
-                raise TypeError(("value for leaf {} must be an instance of {};"
-                                 " got {} instead.").format(name,
-                                 self._instance_check[name], type(value))) # TODO correct relative path error
+            if self._instance_check[name] is not None:
+                check_exists = True
+                if not isinstance(value, self._instance_check[name]):
+                    raise TypeError(("value for leaf {} must be an instance of {};"
+                                     " got {} instead.").format(name,
+                                     self._instance_check[name], type(value))) # TODO correct relative path error
         if name in self._validate_check:
-            check_exists = True
-            try:
-                check = self._validate_check[name](value)
-            except Exception:
-                check = False
-            if not check:
-                raise TypeError(("value for leaf {} did not pass user-defined "
-                                 "validating function").format(name)) # TODO correct relative path error
+            if self._validate_check[name] is not None:
+                check_exists = True
+                try:
+                    check = self._validate_check[name](value)
+                except Exception:
+                    check = False
+                if not check:
+                    raise TypeError(("value for leaf {} did not pass user-defined "
+                                     "validating function").format(name)) # TODO correct relative path error
         if self._strictmode and not check_exists:
             raise TypeError(("can't create new leaf '{}' in a strict tree without a "
                              "type or validation function declared.").format(name)) # TODO correct relative path error

@@ -36,6 +36,39 @@ class TestTypeCheck(unittest.TestCase):
         with self.assertRaises(TypeError):
             tc.a.b = 1.0
 
+    def test_docstring(self):
+        tc = forest.Tree()
+        tc._branch('a')
+        tc._docstring('a.b', 'a nice descriptive docstring')
+        tc._docstring('a.c', """Another one""")
+
+        self.assertEqual(tc._docstring('a.b'), 'a nice descriptive docstring')
+        self.assertEqual(tc._docstring('a.c'), 'Another one')
+        self.assertEqual(tc._docstring('a.f'), None)
+
+    def test_describe(self):
+        tc = forest.Tree()
+        tc._branch('a')
+        tc._describe('a.b', 'a nice descriptive docstring', int)
+        with self.assertRaises(TypeError):
+            tc.a.b = 1.0
+        tc.a.b = 1
+
+        def validate_ac(value):
+            return 0 <= value <= 256
+        tc._describe('a.c', """Another one""", instanceof=int, validate=validate_ac)
+
+        self.assertEqual(tc._docstring('a.b'), 'a nice descriptive docstring')
+        self.assertEqual(tc._docstring('a.c'), 'Another one')
+        with self.assertRaises(TypeError):
+            tc.a.c = 1.0
+
+        tc._describe('a.c', """A different one""", float, validate=validate_ac)
+        self.assertEqual(tc._docstring('a.c'), 'A different one')
+        tc.a.c = 1.0
+        with self.assertRaises(TypeError):
+            tc.a.c = -50.0
+
     def test_validate(self):
         tc = forest.Tree()
         tc._branch('a')
