@@ -371,16 +371,26 @@ class Tree(object):
 
     def _lines(self):
         lines = []
-        for leafname, leaf in self._leaves.items():
+        for key, value in self._items():
             try:
-                r = leaf.__repr__()
+                r = value.__repr__()
             except (AttributeError, TypeError):
-                r = leaf
-            lines.append('{}={}'.format(leafname, r))
-        for branchname, branch in self._branches.items():
-            for line in branch._lines():
-                lines.append('{}.{}'.format(branchname, line))
+                r = value
+            lines.append('{}={}'.format(key, r))
         return lines
 
     def __str__(self):
         return '\n'.join(line for line in self._lines())
+
+    def _keys(self):
+        return (key for key, value in self._items())
+
+    def _values(self):
+        return (value for key, value in self._items())
+
+    def _items(self):
+        for item in self._leaves.items():
+            yield item
+        for branchname, branch in self._branches.items():
+            for key, value in branch._items():
+                yield ('{}.{}'.format(branchname, key), value)
