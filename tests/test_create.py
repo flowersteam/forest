@@ -82,3 +82,6 @@ class TestCreate(unittest.TestCase):
 
         self.assertTrue('a.b.c' in tc)
         self.assertTrue(not 'a.b.d' in tc)
+
+if __name__ == '__main__':
+    unittest.main()

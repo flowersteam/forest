@@ -47,3 +47,6 @@ class TestNestedItem(unittest.TestCase):
         self.assertEqual(tc.a.b, 1)
         self.assertTrue('a.b' in tc)
         self.assertTrue('a.c' not in tc)
+
+if __name__ == '__main__':
+    unittest.main()

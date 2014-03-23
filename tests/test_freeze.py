@@ -29,3 +29,6 @@ class TestFreeze(unittest.TestCase):
         with self.assertRaises(ValueError):
             tc.a.c = 1
         tc.a.b = 2
+
+if __name__ == '__main__':
+    unittest.main()

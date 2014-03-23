@@ -17,3 +17,6 @@ class TestIterators(unittest.TestCase):
         self.assertEqual({'a.b', 'color'}, set(tc._keys()))
         self.assertEqual({1, 'blue'}, set(tc._values()))
         self.assertEqual({('a.b', 1), ('color', 'blue')}, set(tc._items()))
+
+if __name__ == '__main__':
+    unittest.main()

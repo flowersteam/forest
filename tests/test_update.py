@@ -79,3 +79,6 @@ class TestUpdate(unittest.TestCase):
         self.assertEqual(t.b, [1, 2])
         self.assertEqual(t.abc.cde.d, 3)
         self.assertEqual(t.abc.f, None)
+
+if __name__ == '__main__':
+    unittest.main()

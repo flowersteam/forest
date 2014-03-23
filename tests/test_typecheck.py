@@ -166,3 +166,6 @@ class TestTypeCheck(unittest.TestCase):
             return 0 <= value <= 256
         t._validate('b', validate_b)
         t.b = 1
+
+if __name__ == '__main__':
+    unittest.main()

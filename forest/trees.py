@@ -59,7 +59,7 @@ class Tree(object):
         :param deep:  if True, perform a deep copy
         """
         if deep:
-            return self.__deepcopy__()
+            return self.__deepcopy__({})
         return self.__copy__()
 
     def __copy__(self):
@@ -75,14 +75,15 @@ class Tree(object):
         object.__setattr__(new_tree, '_strictmode', self._strictmode)
         return new_tree
 
-    def __deepcopy__(self):
+    def __deepcopy__(self, memo):
         new_tree = Tree()
-        object.__setattr__(new_tree, '_leaves', copy.deepcopy(self._leaves))
-        object.__setattr__(new_tree, '_instance_check', copy.deepcopy(self._instance_check))
-        object.__setattr__(new_tree, '_validate_check', copy.deepcopy(self._validate_check))
-        object.__setattr__(new_tree, '_coverage_', copy.deepcopy(self._coverage_))
-        object.__setattr__(new_tree, '_history_', copy.deepcopy(self._history_))
-        object.__setattr__(new_tree, '_branches', copy.deepcopy(self._branches))
+        memo[id(self)] = new_tree
+        object.__setattr__(new_tree, '_leaves', copy.deepcopy(self._leaves, memo))
+        object.__setattr__(new_tree, '_instance_check', copy.deepcopy(self._instance_check, memo))
+        object.__setattr__(new_tree, '_validate_check', copy.deepcopy(self._validate_check, memo))
+        object.__setattr__(new_tree, '_coverage_', copy.deepcopy(self._coverage_, memo))
+        object.__setattr__(new_tree, '_history_', copy.deepcopy(self._history_, memo))
+        object.__setattr__(new_tree, '_branches', copy.deepcopy(self._branches, memo))
         object.__setattr__(new_tree, '_freeze_', self._freeze_)
         object.__setattr__(new_tree, '_freeze_struct_', self._freeze_struct_)
         object.__setattr__(new_tree, '_strictmode', self._strictmode)

@@ -84,3 +84,6 @@ class TestPickle(unittest.TestCase):
             t2 = pickle.load(f)
 
         self.assertEqual(t, t2)
+
+if __name__ == '__main__':
+    unittest.main()
