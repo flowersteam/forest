@@ -42,6 +42,10 @@ Branches and leaves names cannot start with an underscore. Inversely, all public
 
 `Tree` is not inherited from `dict`. It offers most of the dict methods, but is not a drop-in replacement: method are all prefixed with an underscore : (`_update()`, `_get()`, `_setdefault()`, `_items()` etc), and their behavior are designed to be consistent with the hiearchical data structure, not the `dict` interface.
 
+#### Not a lean data structure
+
+The datastructure is geared toward preventing and detecting miuse. That creates overhead that makes `Tree` ill fitted for intensive applications.
+
 #### Values can optionally be validated when they are set
 
 They can be validated either by their type:
@@ -62,3 +66,19 @@ t._validate('flag', check_bytes)
 t.flag = 150
 t.flag = 300 # raises TypeError
 ```
+
+#### Coverage and history records are kept
+
+The numbers of time an attribute was accessed is recorded, as well as the successive values an attribute was set.
+
+```python
+t.flag = 150
+t._coverage('flag') == 0
+t._history('flag') == [150]
+t.flag
+t._coverage('flag') == 1
+t.flag = 153
+t._history('flag') == [150, 153]
+```
+
+This is useful to check if an attribute which should have had been accessed was indeed, or that an attribute was not set to wrong values over the course of the execution.
