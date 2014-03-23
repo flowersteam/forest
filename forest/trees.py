@@ -22,10 +22,13 @@ class Tree(object):
         object.__setattr__(self, '_instance_check', {})
         object.__setattr__(self, '_validate_check', {})
         object.__setattr__(self, '_docstrings', {})
+        object.__setattr__(self, '_coverage_', {})
+        object.__setattr__(self, '_history_', {})
         object.__setattr__(self, '_branches', {})
         object.__setattr__(self, '_freeze_', False)
         object.__setattr__(self, '_freeze_struct_', False)
         object.__setattr__(self, '_strictmode', False)
+        object.__setattr__(self, '_coverage_', {})
         if existing is not None:
             self._update(existing, overwrite=True)
 
@@ -64,6 +67,8 @@ class Tree(object):
         object.__setattr__(new_tree, '_leaves', self._leaves)
         object.__setattr__(new_tree, '_instance_check', self._instance_check)
         object.__setattr__(new_tree, '_validate_check', self._validate_check)
+        object.__setattr__(new_tree, '_coverage_', self._coverage_)
+        object.__setattr__(new_tree, '_history_', self._history_)
         object.__setattr__(new_tree, '_branches', self._branches)
         object.__setattr__(new_tree, '_freeze_', self._freeze_)
         object.__setattr__(new_tree, '_freeze_struct_', self._freeze_struct_)
@@ -75,11 +80,27 @@ class Tree(object):
         object.__setattr__(new_tree, '_leaves', copy.deepcopy(self._leaves))
         object.__setattr__(new_tree, '_instance_check', copy.deepcopy(self._instance_check))
         object.__setattr__(new_tree, '_validate_check', copy.deepcopy(self._validate_check))
-        object.__setattr__(new_tree, '_branches', {key: b.__deepcopy__() for key, b in self._branches.items()})
+        object.__setattr__(new_tree, '_coverage_', copy.deepcopy(self._coverage_))
+        object.__setattr__(new_tree, '_history_', copy.deepcopy(self._history_))
+        object.__setattr__(new_tree, '_branches', copy.deepcopy(self._branches))
         object.__setattr__(new_tree, '_freeze_', self._freeze_)
         object.__setattr__(new_tree, '_freeze_struct_', self._freeze_struct_)
         object.__setattr__(new_tree, '_strictmode', self._strictmode)
         return new_tree
+
+    def _coverage(self, key):
+        path = key.split('.', 1)
+        if len(path) == 1:
+            return self._coverage_[key]
+        else:
+            return self._branches[path[0]]._coverage(path[1])
+
+    def _history(self, key):
+        path = key.split('.', 1)
+        if len(path) == 1:
+            return self._history_[key]
+        else:
+            return self._branches[path[0]]._history(path[1])
 
     def _branch(self, name, overwrite=False, nested=True):
         """
@@ -219,6 +240,7 @@ class Tree(object):
             try:
                 return self._branches[key]
             except KeyError:
+                self._coverage_[key] = self._coverage_.get(key, 0) + 1
                 return self._leaves[key]
         except ValueError:
             object.__getattribute__(self, key)
@@ -252,6 +274,9 @@ class Tree(object):
             if key in self._branches:
                 raise ValueError('leaf cannot be added: a branch already '
                                  'exists with name {}'.format(key))
+            self._history_.setdefault(key, [])
+            self._history_[key].append(value)
+            self._coverage_[key] = self._coverage_.get(key, 0)
             self._leaves[key] = value
 
     def __setitem__(self, key, value):
@@ -269,8 +294,28 @@ class Tree(object):
                 self._branches[path[0]] = Tree()
             self._branches[path[0]].__setitem__(path[1], value)
 
+    def _clear(self, struct=True, typecheck=False):
+        """Remove all leaves and branch from the tree.
+
+        :param struct:    if False, does not remove the branches.
+        :param typecheck: if True, does remove the typecheck of the leaves.
+                          Note that, as typecheck is kept locally in each node,
+                          if struct is True and typecheck is False, only the typecheck
+                          of the direct leaves will be kept.
+        """
+        self._leaves.clear()
+        for branch in self._branches.values:
+            branch._clear(struct=struct, typecheck=typecheck)
+        if struct:
+            self._branches.clear()
+        if typecheck:
+            self._instance_check.clear()
+            self._validate.clear()
+
+    # pop, popitem,
+
     def __len__(self):
-        """Return the number of direct branchs and leaves"""
+        """Return the number of direct branchs and leaves""" #FIXME is that what we expect ?
         return len(self._branches) + len(self._leaves)
 
     def __contains__(self, key):
