@@ -5,7 +5,7 @@
 ```python
 import forest
 
-t = trees.Tree()
+t = forest.Tree()
 t.temperature = 10
 t._branch('experiment1')
 t.experiment1.duration = 3600.0
@@ -26,7 +26,7 @@ Is applies only if you use the attribute interface. You can implicitly declare b
 ```python
 import forest
 
-t = trees.Tree()
+t = forest.Tree()
 t.temperature = 10
 t._branch('experiment1')
 t.experiment1.duration = 3600.0     # attribute interface
