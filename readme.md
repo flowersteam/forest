@@ -73,12 +73,12 @@ The numbers of time an attribute was accessed is recorded, as well as the succes
 
 ```python
 t.flag = 150
-t._coverage('flag') == 0
-t._history('flag') == [150]
+t._coverage('flag') # returns 0
+t._history('flag') # returns [150]
 t.flag
-t._coverage('flag') == 1
+t._coverage('flag') # returns 1
 t.flag = 153
-t._history('flag') == [150, 153]
+t._history('flag') # returns [150, 153]
 ```
 
 This is useful to check if an attribute which should have had been accessed was indeed, or that an attribute was not set to wrong values over the course of the execution.
