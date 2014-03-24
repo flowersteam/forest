@@ -168,5 +168,33 @@ class TestTypeCheck(unittest.TestCase):
         t._validate('b', validate_b)
         t.b = 1
 
+    def test_collision(self):
+        t = forest.Tree()
+        t._isinstance('a', int)
+        with self.assertRaises(ValueError):
+            t._isinstance('a.b', int)
+
+    def test_complete(self):
+        t = forest.Tree()
+
+        t._isinstance('f', int)
+        self.assertEqual(t._complete(), set(('f')))
+
+        t._docstring('a.b', int)
+        self.assertEqual(t._complete(), set(('f', 'a.b')))
+
+        def validate_c(value):
+            return 0 <= value <= 256
+        t._validate('a.e.c', validate_c)
+        self.assertEqual(t._complete(), set(('f', 'a.b', 'a.e.c')))
+
+        t._describe('c.b', docstring='can describe things on non existing branches', instanceof=int)
+        self.assertEqual(t._complete(), set(('f', 'a.b', 'a.e.c', 'c.b')))
+
+        t.a.b = 2
+        self.assertEqual(t._complete(), set(('f', 'a.e.c', 'c.b')))
+        t.f = 42
+        self.assertEqual(t._complete(), set(('a.e.c', 'c.b')))
+
 if __name__ == '__main__':
     unittest.main()

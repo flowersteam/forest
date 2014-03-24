@@ -21,14 +21,13 @@ class Tree(object):
         object.__setattr__(self, '_leaves', {})
         object.__setattr__(self, '_instance_check', {})
         object.__setattr__(self, '_validate_check', {})
-        object.__setattr__(self, '_docstrings', {})
+        object.__setattr__(self, '_docstrings_', {})
         object.__setattr__(self, '_coverage_', {})
         object.__setattr__(self, '_history_', {})
         object.__setattr__(self, '_branches', {})
         object.__setattr__(self, '_freeze_', False)
         object.__setattr__(self, '_freeze_struct_', False)
         object.__setattr__(self, '_strictmode', False)
-        object.__setattr__(self, '_coverage_', {})
         if existing is not None:
             self._update(existing, overwrite=True)
 
@@ -67,7 +66,7 @@ class Tree(object):
         object.__setattr__(new_tree, '_leaves', self._leaves)
         object.__setattr__(new_tree, '_instance_check', self._instance_check)
         object.__setattr__(new_tree, '_validate_check', self._validate_check)
-        object.__setattr__(new_tree, '_docstrings', self._docstrings)
+        object.__setattr__(new_tree, '_docstrings_', self._docstrings_)
         object.__setattr__(new_tree, '_coverage_', self._coverage_)
         object.__setattr__(new_tree, '_history_', self._history_)
         object.__setattr__(new_tree, '_branches', self._branches)
@@ -82,7 +81,7 @@ class Tree(object):
         object.__setattr__(new_tree, '_leaves', copy.deepcopy(self._leaves, memo))
         object.__setattr__(new_tree, '_instance_check', copy.deepcopy(self._instance_check, memo))
         object.__setattr__(new_tree, '_validate_check', copy.deepcopy(self._validate_check, memo))
-        object.__setattr__(new_tree, '_docstrings', copy.deepcopy(self._docstrings, memo))
+        object.__setattr__(new_tree, '_docstrings_', copy.deepcopy(self._docstrings_, memo))
         object.__setattr__(new_tree, '_coverage_', copy.deepcopy(self._coverage_, memo))
         object.__setattr__(new_tree, '_history_', copy.deepcopy(self._history_, memo))
         object.__setattr__(new_tree, '_branches', copy.deepcopy(self._branches, memo))
@@ -129,6 +128,11 @@ class Tree(object):
             if len(path) == 1:
                 raise ValueError("Can't create a branch named '{}': a leaf "
                                  "with that name already exists.".format(path[0]))
+        elif (path[0] in self._docstrings_ or
+              path[0] in self._validate_check or
+              path[0] in self._instance_check):
+            raise ValueError("Can't create a branch named '{}': a leaf "
+                                 "with that name is already described.".format(path[0]))
         else:
             if path[0] not in self._branches.keys():
                 self._branches[path[0]] = Tree()
@@ -163,8 +167,8 @@ class Tree(object):
         path = name.split('.', 1)
         if len(path) == 1:
             if docstring is not _uid:
-                self._docstrings[name] = docstring
-            return self._docstrings.get(name, None)
+                self._docstrings_[name] = docstring
+            return self._docstrings_.get(name, None)
         else:
             if path[0] not in self._branches and docstring is not _uid:
                 self._branch(path[0])
@@ -174,6 +178,17 @@ class Tree(object):
         return (self._docstring(name, docstring),
                 self._isinstance(name, instanceof),
                 self._validate(name, validate))
+
+    def _complete(self):
+        """Return all described attributes that are not set"""
+
+        notset = set(self._docstrings_.keys())
+        notset.update(self._validate_check.keys())
+        notset.update(self._instance_check.keys())
+        notset.difference_update(self._leaves.keys())
+        for branchname, branch in self._branches.items():
+            notset.update(('{}.{}'.format(branchname, e) for e in branch._complete()))
+        return notset
 
     def _check_value(self, name, value):
         """Check a value against defined instance and custom checks
