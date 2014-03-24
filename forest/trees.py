@@ -14,7 +14,7 @@ class Tree(object):
     A Tree is a set of elements, some of which are other trees.
     """
 
-    def __init__(self, existing=None):
+    def __init__(self, existing=None, strict=False):
         """
         :param existing: an existing tree or dictionary.
         """
@@ -27,7 +27,7 @@ class Tree(object):
         object.__setattr__(self, '_branches', {})
         object.__setattr__(self, '_freeze_', False)
         object.__setattr__(self, '_freeze_struct_', False)
-        object.__setattr__(self, '_strictmode', False)
+        object.__setattr__(self, '_strict_', strict)
         if existing is not None:
             self._update(existing, overwrite=True)
 
@@ -72,7 +72,7 @@ class Tree(object):
         object.__setattr__(new_tree, '_branches', self._branches)
         object.__setattr__(new_tree, '_freeze_', self._freeze_)
         object.__setattr__(new_tree, '_freeze_struct_', self._freeze_struct_)
-        object.__setattr__(new_tree, '_strictmode', self._strictmode)
+        object.__setattr__(new_tree, '_strict_', self._strict_)
         return new_tree
 
     def __deepcopy__(self, memo):
@@ -87,7 +87,7 @@ class Tree(object):
         object.__setattr__(new_tree, '_branches', copy.deepcopy(self._branches, memo))
         object.__setattr__(new_tree, '_freeze_', self._freeze_)
         object.__setattr__(new_tree, '_freeze_struct_', self._freeze_struct_)
-        object.__setattr__(new_tree, '_strictmode', self._strictmode)
+        object.__setattr__(new_tree, '_strict_', self._strict_)
         return new_tree
 
     def _coverage(self, key):
@@ -135,7 +135,7 @@ class Tree(object):
                                  "with that name is already described.".format(path[0]))
         else:
             if path[0] not in self._branches.keys():
-                self._branches[path[0]] = Tree()
+                self._branches[path[0]] = Tree(strict=self._strict_)
         if len(path) == 2:
             self._branches[path[0]]._branch(path[1], overwrite=overwrite, nested=nested)
 
@@ -212,13 +212,12 @@ class Tree(object):
                 if not check:
                     raise TypeError(("value for leaf {} did not pass user-defined "
                                      "validating function").format(name)) # TODO correct relative path error
-        if self._strictmode and not check_exists:
+        if self._strict_ and not check_exists:
             raise TypeError(("can't create new leaf '{}' in a strict tree without a "
                              "type or validation function declared.").format(name)) # TODO correct relative path error
 
-
     def _strict(self, state=True):
-        object.__setattr__(self, "_strictmode", state)
+        object.__setattr__(self, "_strict_", state)
 
     def _check(self, tree, struct=False):
         """Check conformity with another tree type checks and validate functions
@@ -313,9 +312,7 @@ class Tree(object):
             self.__setattr__(key, value)
         else:
             if path[0] not in self._branches:
-                # TODO correct message branch name
-                assert path[0] not in self._leaves, "Can't create branch {}, a leaf already exists with that name".format(path[0])
-                self._branches[path[0]] = Tree()
+                self._branch(path[0])
             self._branches[path[0]].__setitem__(path[1], value)
 
     def _clear(self, struct=True, typecheck=False):
