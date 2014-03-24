@@ -67,6 +67,7 @@ class Tree(object):
         object.__setattr__(new_tree, '_leaves', self._leaves)
         object.__setattr__(new_tree, '_instance_check', self._instance_check)
         object.__setattr__(new_tree, '_validate_check', self._validate_check)
+        object.__setattr__(new_tree, '_docstrings', self._docstrings)
         object.__setattr__(new_tree, '_coverage_', self._coverage_)
         object.__setattr__(new_tree, '_history_', self._history_)
         object.__setattr__(new_tree, '_branches', self._branches)
@@ -81,6 +82,7 @@ class Tree(object):
         object.__setattr__(new_tree, '_leaves', copy.deepcopy(self._leaves, memo))
         object.__setattr__(new_tree, '_instance_check', copy.deepcopy(self._instance_check, memo))
         object.__setattr__(new_tree, '_validate_check', copy.deepcopy(self._validate_check, memo))
+        object.__setattr__(new_tree, '_docstrings', copy.deepcopy(self._docstrings, memo))
         object.__setattr__(new_tree, '_coverage_', copy.deepcopy(self._coverage_, memo))
         object.__setattr__(new_tree, '_history_', copy.deepcopy(self._history_, memo))
         object.__setattr__(new_tree, '_branches', copy.deepcopy(self._branches, memo))
@@ -142,6 +144,8 @@ class Tree(object):
                 self._instance_check[name] = cls
             return self._instance_check.get(name, None)
         else:
+            if path[0] not in self._branches and cls is not _uid:
+                self._branch(path[0])
             return self._branches[path[0]]._isinstance(path[1], cls)
 
     def _validate(self, name, validate=_uid):
@@ -151,6 +155,8 @@ class Tree(object):
                 self._validate_check[name] = validate
             return self._validate_check.get(name, None)
         else:
+            if path[0] not in self._branches and validate is not _uid:
+                self._branch(path[0])
             return self._branches[path[0]]._validate(path[1], validate)
 
     def _docstring(self, name, docstring=_uid):
@@ -160,6 +166,8 @@ class Tree(object):
                 self._docstrings[name] = docstring
             return self._docstrings.get(name, None)
         else:
+            if path[0] not in self._branches and docstring is not _uid:
+                self._branch(path[0])
             return self._branches[path[0]]._docstring(path[1], docstring=docstring)
 
     def _describe(self, name, docstring=_uid, instanceof=_uid, validate=_uid):

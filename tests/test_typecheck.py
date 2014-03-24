@@ -50,6 +50,7 @@ class TestTypeCheck(unittest.TestCase):
         tc = forest.Tree()
         tc._branch('a')
         tc._describe('a.b', 'a nice descriptive docstring', int)
+        tc._describe('c.b', 'can describe things on non existing branches', int)
         with self.assertRaises(TypeError):
             tc.a.b = 1.0
         tc.a.b = 1
