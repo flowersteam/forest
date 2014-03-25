@@ -196,5 +196,17 @@ class TestTypeCheck(unittest.TestCase):
         t.f = 42
         self.assertEqual(t._complete(), set(('a.e.c', 'c.b')))
 
+    def test_update(self):
+        t = forest.Tree()
+        t._isinstance('f', int)
+        t2 = forest.Tree(strict=True)
+        with self.assertRaises(TypeError):
+            t2.f = 2
+        t2._update(t, descriptions=False)
+        with self.assertRaises(TypeError):
+            t2.f = 2
+        t2._update(t)
+        t2.f = 2
+
 if __name__ == '__main__':
     unittest.main()

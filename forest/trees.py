@@ -104,12 +104,14 @@ class Tree(object):
         else:
             return self._branches[path[0]]._history(path[1])
 
-    def _branch(self, name, overwrite=False, nested=True):
+    def _branch(self, name, value=None, overwrite=False, nested=True):
         """
         Create a new branch in the tree if it does not already exists.
         Can create nested branches.
 
         :param name:      the name of the branch
+        :param value:     optionally, an existing `Tree` instance instead of creating
+                          a new empty `Tree`.
         :param nested:    if True, create intermediate branchs as needed.
                           Note that if override is True, existing intermediate branchs
                           will not be recreated.
@@ -135,7 +137,10 @@ class Tree(object):
                                  "with that name is already described.".format(path[0]))
         else:
             if path[0] not in self._branches.keys():
-                self._branches[path[0]] = Tree(strict=self._strict_)
+                if value is not None:
+                    self._branches[path[0]] = value
+                else:
+                    self._branches[path[0]] = Tree(strict=self._strict_)
         if len(path) == 2:
             self._branches[path[0]]._branch(path[1], overwrite=overwrite, nested=nested)
 
@@ -212,7 +217,7 @@ class Tree(object):
                 if not check:
                     raise TypeError(("value for leaf {} did not pass user-defined "
                                      "validating function").format(name)) # TODO correct relative path error
-        if self._strict_ and not check_exists:
+        if self._strict_ and not check_exists: # FIXME: is this the correct place to do this
             raise TypeError(("can't create new leaf '{}' in a strict tree without a "
                              "type or validation function declared.").format(name)) # TODO correct relative path error
 
@@ -400,14 +405,15 @@ class Tree(object):
             for branch in self._branches.values():
                 branch._unfreeze_struct(recursive=True)
 
-    def _update(self, tree, overwrite=True):
+    def _update(self, tree, overwrite=True, descriptions=True):
         """\
         Update the tree with values of another tree. If the other tree possess
         branches not present in this one (and structure is not frozen), those
         branches will be created as well.
 
-        :param overwrite:  if False, value already present in the tree will not
-                           be modified (default True).
+        :param overwrite:    if False, value already present in the tree will not
+                             be modified (default True).
+        :param descriptions: if True, copy the descriptions as well
 
         ..raise:: TypeError if the tree is frozen and an assignement is needed,
                   or the structure is frozen and an element of the other tree
@@ -416,16 +422,28 @@ class Tree(object):
                   a frozen tree if assignement happen on an unfrozen branch.
         """
         if isinstance(tree, Tree):
+            if descriptions:
+                for key, value in tree._instance_check.items():
+                    if overwrite or key not in self._instance_check:
+                        self._instance_check[key] = value
+                for key, value in tree._validate_check.items():
+                    if overwrite or key not in self._validate_check:
+                        self._validate_check[key] = value
+                for key, value in tree._docstrings_.items():
+                    if overwrite or key not in self._docstrings_:
+                        self._docstrings_[key] = value
             for key, value in tree._leaves.items():
                 if key in self._leaves:
                     if overwrite:
                         self.__setattr__(key, value)
                 else:
                     self.__setattr__(key, value)
+
             for branchname, branch in tree._branches.items():
                 if branchname not in self._branches:
                     self._branch(branchname)
-                self._branches[branchname]._update(branch, overwrite=overwrite)
+                self._branches[branchname]._update(branch, overwrite=overwrite,
+                                                           descriptions=descriptions)
         else:
             if not overwrite:
                 for key, value in tree.items():
