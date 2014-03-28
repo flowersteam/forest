@@ -37,7 +37,7 @@ class TestUpdate(unittest.TestCase):
 
         t2 = forest.Tree()
         t2.b = 3
-        t2._freeze()
+        t2._freeze(True)
         with self.assertRaises(ValueError):
             t2._update(t)
 
@@ -48,7 +48,7 @@ class TestUpdate(unittest.TestCase):
 
         t2 = forest.Tree()
         t2.b = 3
-        t2._freeze_struct()
+        t2._freeze_struct(True)
         t2._update(t)
         self.assertEqual(t.b, 2)
 

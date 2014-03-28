@@ -18,13 +18,13 @@ class Tree(object):
         """
         :param existing: an existing tree or dictionary.
         """
-        object.__setattr__(self, '_leaves', {})
-        object.__setattr__(self, '_instance_check', {})
-        object.__setattr__(self, '_validate_check', {})
+        object.__setattr__(self, '_leaves_', {})
+        object.__setattr__(self, '_isinstance_', {})
+        object.__setattr__(self, '_validate_', {})
         object.__setattr__(self, '_docstrings_', {})
         object.__setattr__(self, '_coverage_', {})
         object.__setattr__(self, '_history_', {})
-        object.__setattr__(self, '_branches', {})
+        object.__setattr__(self, '_branches_', {})
         object.__setattr__(self, '_freeze_', False)
         object.__setattr__(self, '_freeze_struct_', False)
         object.__setattr__(self, '_strict_', strict)
@@ -63,13 +63,13 @@ class Tree(object):
 
     def __copy__(self):
         new_tree = Tree()
-        object.__setattr__(new_tree, '_leaves', self._leaves)
-        object.__setattr__(new_tree, '_instance_check', self._instance_check)
-        object.__setattr__(new_tree, '_validate_check', self._validate_check)
+        object.__setattr__(new_tree, '_leaves_', self._leaves_)
+        object.__setattr__(new_tree, '_isinstance_', self._isinstance_)
+        object.__setattr__(new_tree, '_validate_', self._validate_)
         object.__setattr__(new_tree, '_docstrings_', self._docstrings_)
         object.__setattr__(new_tree, '_coverage_', self._coverage_)
         object.__setattr__(new_tree, '_history_', self._history_)
-        object.__setattr__(new_tree, '_branches', self._branches)
+        object.__setattr__(new_tree, '_branches_', self._branches_)
         object.__setattr__(new_tree, '_freeze_', self._freeze_)
         object.__setattr__(new_tree, '_freeze_struct_', self._freeze_struct_)
         object.__setattr__(new_tree, '_strict_', self._strict_)
@@ -78,13 +78,13 @@ class Tree(object):
     def __deepcopy__(self, memo):
         new_tree = Tree()
         memo[id(self)] = new_tree
-        object.__setattr__(new_tree, '_leaves', copy.deepcopy(self._leaves, memo))
-        object.__setattr__(new_tree, '_instance_check', copy.deepcopy(self._instance_check, memo))
-        object.__setattr__(new_tree, '_validate_check', copy.deepcopy(self._validate_check, memo))
+        object.__setattr__(new_tree, '_leaves_', copy.deepcopy(self._leaves_, memo))
+        object.__setattr__(new_tree, '_isinstance_', copy.deepcopy(self._isinstance_, memo))
+        object.__setattr__(new_tree, '_validate_', copy.deepcopy(self._validate_, memo))
         object.__setattr__(new_tree, '_docstrings_', copy.deepcopy(self._docstrings_, memo))
         object.__setattr__(new_tree, '_coverage_', copy.deepcopy(self._coverage_, memo))
         object.__setattr__(new_tree, '_history_', copy.deepcopy(self._history_, memo))
-        object.__setattr__(new_tree, '_branches', copy.deepcopy(self._branches, memo))
+        object.__setattr__(new_tree, '_branches_', copy.deepcopy(self._branches_, memo))
         object.__setattr__(new_tree, '_freeze_', self._freeze_)
         object.__setattr__(new_tree, '_freeze_struct_', self._freeze_struct_)
         object.__setattr__(new_tree, '_strict_', self._strict_)
@@ -95,14 +95,14 @@ class Tree(object):
         if len(path) == 1:
             return self._coverage_[key]
         else:
-            return self._branches[path[0]]._coverage(path[1])
+            return self._branches_[path[0]]._coverage(path[1])
 
     def _history(self, key):
         path = key.split('.', 1)
         if len(path) == 1:
             return self._history_[key]
         else:
-            return self._branches[path[0]]._history(path[1])
+            return self._branches_[path[0]]._history(path[1])
 
     def _branch(self, name, value=None, overwrite=False, nested=True):
         """
@@ -121,108 +121,105 @@ class Tree(object):
             raise ValueError("Can't add a branch to a frozen tree")
         if self._freeze_struct_:
             raise ValueError("Can't add a branch to a tree whose structure is frozen")
-        self._check_name(name)
+        self._check_key(name)
         path = name.split('.', 1)
 
-        if len(path) == 2 and (not nested) and path[0] not in self._branches:
+        if len(path) == 2 and (not nested) and path[0] not in self._branches_:
             raise ValueError("Can't created non-existent intermediary branches with nested = False")
-        if path[0] in self._leaves:
+        if path[0] in self._leaves_:
             if len(path) == 1:
                 raise ValueError("Can't create a branch named '{}': a leaf "
                                  "with that name already exists.".format(path[0]))
         elif (path[0] in self._docstrings_ or
-              path[0] in self._validate_check or
-              path[0] in self._instance_check):
+              path[0] in self._validate_ or
+              path[0] in self._isinstance_):
             raise ValueError("Can't create a branch named '{}': a leaf "
                                  "with that name is already described.".format(path[0]))
         else:
-            if path[0] not in self._branches.keys():
+            if path[0] not in self._branches_.keys():
                 if value is not None:
-                    self._branches[path[0]] = value
+                    self._branches_[path[0]] = value
                 else:
-                    self._branches[path[0]] = Tree(strict=self._strict_)
+                    self._branches_[path[0]] = Tree(strict=self._strict_)
         if len(path) == 2:
-            self._branches[path[0]]._branch(path[1], overwrite=overwrite, nested=nested)
+            self._branches_[path[0]]._branch(path[1], overwrite=overwrite, nested=nested)
 
-        return self._branches[path[0]]
+        return self._branches_[path[0]]
 
-    def _isinstance(self, name, cls=_uid):
-        path = name.split('.', 1)
+    def _isinstance(self, key, cls=_uid):
+        path = key.split('.', 1)
         if len(path) == 1:
             if cls is not _uid:
-                self._instance_check[name] = cls
-            return self._instance_check.get(name, None)
+                self._isinstance_[key] = cls
+            return self._isinstance_.get(key, None)
         else:
-            if path[0] not in self._branches and cls is not _uid:
+            if path[0] not in self._branches_ and cls is not _uid:
                 self._branch(path[0])
-            return self._branches[path[0]]._isinstance(path[1], cls)
+            return self._branches_[path[0]]._isinstance(path[1], cls)
 
-    def _validate(self, name, validate=_uid):
-        path = name.split('.', 1)
+    def _validate(self, key, validate=_uid):
+        path = key.split('.', 1)
         if len(path) == 1:
             if validate is not _uid:
-                self._validate_check[name] = validate
-            return self._validate_check.get(name, None)
+                self._validate_[key] = validate
+            return self._validate_.get(key, None)
         else:
-            if path[0] not in self._branches and validate is not _uid:
+            if path[0] not in self._branches_ and validate is not _uid:
                 self._branch(path[0])
-            return self._branches[path[0]]._validate(path[1], validate)
+            return self._branches_[path[0]]._validate(path[1], validate)
 
-    def _docstring(self, name, docstring=_uid):
-        path = name.split('.', 1)
+    def _docstring(self, key, docstring=_uid):
+        path = key.split('.', 1)
         if len(path) == 1:
             if docstring is not _uid:
-                self._docstrings_[name] = docstring
-            return self._docstrings_.get(name, None)
+                self._docstrings_[key] = docstring
+            return self._docstrings_.get(key, None)
         else:
-            if path[0] not in self._branches and docstring is not _uid:
+            if path[0] not in self._branches_ and docstring is not _uid:
                 self._branch(path[0])
-            return self._branches[path[0]]._docstring(path[1], docstring=docstring)
+            return self._branches_[path[0]]._docstring(path[1], docstring=docstring)
 
-    def _describe(self, name, docstring=_uid, instanceof=_uid, validate=_uid):
-        return (self._docstring(name, docstring),
-                self._isinstance(name, instanceof),
-                self._validate(name, validate))
+    def _describe(self, key, docstring=_uid, instanceof=_uid, validate=_uid):
+        return (self._docstring(key, docstring),
+                self._isinstance(key, instanceof),
+                self._validate(key, validate))
 
     def _complete(self):
         """Return all described attributes that are not set"""
 
         notset = set(self._docstrings_.keys())
-        notset.update(self._validate_check.keys())
-        notset.update(self._instance_check.keys())
-        notset.difference_update(self._leaves.keys())
-        for branchname, branch in self._branches.items():
+        notset.update(self._validate_.keys())
+        notset.update(self._isinstance_.keys())
+        notset.difference_update(self._leaves_.keys())
+        for branchname, branch in self._branches_.items():
             notset.update(('{}.{}'.format(branchname, e) for e in branch._complete()))
         return notset
 
-    def _check_value(self, name, value):
+    def _check_value(self, key, value):
         """Check a value against defined instance and custom checks
         if the tree is strict, then a check must be defined
         """
         check_exists = False
-        if name in self._instance_check:
-            if self._instance_check[name] is not None:
+        if key in self._isinstance_:
+            if self._isinstance_[key] is not None:
                 check_exists = True
-                if not isinstance(value, self._instance_check[name]):
+                if not isinstance(value, self._isinstance_[key]):
                     raise TypeError(("value for leaf {} must be an instance of {};"
-                                     " got {} instead.").format(name,
-                                     self._instance_check[name], type(value))) # TODO correct relative path error
-        if name in self._validate_check:
-            if self._validate_check[name] is not None:
+                                     " got {} instead.").format(key,
+                                     self._isinstance_[key], type(value))) # TODO correct relative path error
+        if key in self._validate_:
+            if self._validate_[key] is not None:
                 check_exists = True
                 try:
-                    check = self._validate_check[name](value)
+                    check = self._validate_[key](value)
                 except Exception:
                     check = False
                 if not check:
                     raise TypeError(("value for leaf {} did not pass user-defined "
-                                     "validating function").format(name)) # TODO correct relative path error
+                                     "validating function").format(key)) # TODO correct relative path error
         if self._strict_ and not check_exists: # FIXME: is this the correct place to do this
             raise TypeError(("can't create new leaf '{}' in a strict tree without a "
-                             "type or validation function declared.").format(name)) # TODO correct relative path error
-
-    def _strict(self, state=True):
-        object.__setattr__(self, "_strict_", state)
+                             "type or validation function declared.").format(key)) # TODO correct relative path error
 
     def _check(self, tree, struct=False):
         """Check conformity with another tree type checks and validate functions
@@ -230,26 +227,26 @@ class Tree(object):
         :param struct:      if True, verifies that both tree have the same branches
         :raises TypeError:  if check fails
         """
-        for key, leaf in self._leaves.items():
+        for key, leaf in self._leaves_.items():
             tree._check_value(key, leaf)
-        if struct and set(self._branches.keys()) != set(tree._branches.keys()):
-            diff = set(self._branches.keys()).symmetric_difference(set(tree._branches.keys()))
+        if struct and set(self._branches_.keys()) != set(tree._branches_.keys()):
+            diff = set(self._branches_.keys()).symmetric_difference(set(tree._branches_.keys()))
             raise TypeError('({}) branches are not present in both trees'.format(diff)) # TODO: 2 differences instead of symmetric
-        for key, branch in self._branches.items():
-            if key in tree._branches:
-                branch._check(tree._branches[key], struct=struct)
+        for key, branch in self._branches_.items():
+            if key in tree._branches_:
+                branch._check(tree._branches_[key], struct=struct)
 
     @staticmethod
-    def _check_name(name):
-        """filter acceptable element names"""
+    def _check_key(key):
+        """filter acceptable element keys"""
         try:
-            assert isinstance(name, str) and name != ''
+            assert isinstance(key, str) and key != ''
         except (AssertionError, IndexError):
-            raise ValueError(("element names should be non-empty strings, "
-                              "{} was provided").format(name))
-        if name[0] == '_':
-            raise ValueError(("element names should not start with an "
-                              "underscore, {} was provided").format(name))
+            raise ValueError(("element keys should be non-empty strings, "
+                              "{} was provided").format(key))
+        if key[0] == '_':
+            raise ValueError(("element keys should not start with an "
+                              "underscore, {} was provided").format(key))
 
 
     def _get(self, key, default):
@@ -264,22 +261,22 @@ class Tree(object):
 
     def __getattr__(self, key):
         try:
-            self._check_name(key)
+            self._check_key(key)
             try:
-                return self._branches[key]
+                return self._branches_[key]
             except KeyError:
                 self._coverage_[key] = self._coverage_.get(key, 0) + 1
-                return self._leaves[key]
+                return self._leaves_[key]
         except ValueError:
             object.__getattribute__(self, key)
 
     def __getitem__(self, key):
-        self._check_name(key)
+        self._check_key(key)
         path = key.split('.', 1)
         if len(path) == 1:
             return self.__getattr__(key)
         else:
-            return self._branches[path[0]].__getitem__(path[1])
+            return self._branches_[path[0]].__getitem__(path[1])
 
     def __setattr__(self, key, value):
         """
@@ -289,36 +286,36 @@ class Tree(object):
         """
         if self._freeze_:
             raise ValueError("Can't modify a frozen tree")
-        self._check_name(key)
-        if self._freeze_struct_ and key not in self._leaves and key not in self._branches:
+        self._check_key(key)
+        if self._freeze_struct_ and key not in self._leaves_ and key not in self._branches_:
             raise ValueError("Can't modify the frozen structure of the tree")
         self._check_value(key, value)
         if isinstance(value, Tree):
-            if key in self._leaves:
+            if key in self._leaves_:
                 raise ValueError('branch cannot be added: a leaf already '
                                  'exists with name {}'.format(key))
-            self._branches[key] = value
+            self._branches_[key] = value
         else:
-            if key in self._branches:
+            if key in self._branches_:
                 raise ValueError('leaf cannot be added: a branch already '
                                  'exists with name {}'.format(key))
             self._history_.setdefault(key, [])
             self._history_[key].append(value)
             self._coverage_[key] = self._coverage_.get(key, 0)
-            self._leaves[key] = value
+            self._leaves_[key] = value
 
     def __setitem__(self, key, value):
         if self._freeze_:
             raise ValueError("Can't modify a frozen tree")
-        self._check_name(key)
+        self._check_key(key)
         path = key.split('.', 1)
 
         if len(path) == 1:
             self.__setattr__(key, value)
         else:
-            if path[0] not in self._branches:
+            if path[0] not in self._branches_:
                 self._branch(path[0])
-            self._branches[path[0]].__setitem__(path[1], value)
+            self._branches_[path[0]].__setitem__(path[1], value)
 
     def _clear(self, struct=True, typecheck=False):
         """Remove all leaves and branch from the tree.
@@ -329,81 +326,90 @@ class Tree(object):
                           if struct is True and typecheck is False, only the typecheck
                           of the direct leaves will be kept.
         """
-        self._leaves.clear()
-        for branch in self._branches.values:
+        self._leaves_.clear()
+        for branch in self._branches_.values:
             branch._clear(struct=struct, typecheck=typecheck)
         if struct:
-            self._branches.clear()
+            self._branches_.clear()
         if typecheck:
-            self._instance_check.clear()
+            self._isinstance_.clear()
             self._validate.clear()
 
     # pop, popitem,
 
     def __len__(self):
         """Return the number of direct branchs and leaves""" #FIXME is that what we expect ?
-        return len(self._branches) + len(self._leaves)
+        return len(self._branches_) + len(self._leaves_)
 
     def __contains__(self, key):
-        self._check_name(key)
+        self._check_key(key)
         path = key.split('.', 1)
         if len(path) == 1:
-            return key in self._leaves or key in self._leaves
+            return key in self._leaves_ or key in self._leaves_
         else:
-            return path[0] in self._branches and path[1] in self._branches[path[0]]
+            return path[0] in self._branches_ and path[1] in self._branches_[path[0]]
 
     def __delitem__(self, key):
-        self._check_name(key)
+        self._check_key(key)
         path = key.split('.', 1)
         if len(path) == 1:
             try:
-                del self._leaves[key]
+                del self._leaves_[key]
             except KeyError:
-                del self._branches[key]
+                del self._branches_[key]
         else:
-            return self._branches[path[0]].__delitem__(path[1])
+            return self._branches_[path[0]].__delitem__(path[1])
 
     def __delattr__(self, key):
-        self._check_name(key)
+        self._check_key(key)
         try:
-            del self._leaves[key]
+            del self._leaves_[key]
         except KeyError:
-            del self._branches[key]
-
-    def __iter__(self):
-        """Iter over non-nested attributes."""
-        for leaf in self._leaves.__iter__():
-            yield leaf
-        for branch in self._branches.__iter__():
-            yield branch
+            del self._branches_[key]
 
     def __eq__(self, tree):
-        return (self._leaves == tree._leaves
-                and self._branches == tree._branches)
+        return (self._leaves_ == tree._leaves_
+                and self._branches_ == tree._branches_)
 
-    def _freeze(self, recursive=True):
-        object.__setattr__(self, "_freeze_", True)
-        if recursive:
-            for branch in self._branches.values():
-                branch._freeze(recursive=True)
+    def _freeze(self, freeze, recursive=True):
+        """\
+        Freeze and unfreeze the tree.
 
-    def _unfreeze(self, recursive=True):
-        object.__setattr__(self, "_freeze_", False)
+        We a tree is frozen, attributes can't be modified, created or deleted.
+        :param freeze:     True for freezing, False for unfreezing
+        :param recursive:  to apply the change on branches as well.
+        """
+        object.__setattr__(self, "_freeze_", freeze)
         if recursive:
-            for branch in self._branches.values():
-                branch._unfreeze(recursive=True)
+            for branch in self._branches_.values():
+                branch._freeze(freeze, recursive=True)
 
-    def _freeze_struct(self, recursive=True):
-        object.__setattr__(self, "_freeze_struct_", True)
-        if recursive:
-            for branch in self._branches.values():
-                branch._freeze_struct(recursive=True)
+    def _freeze_struct(self, freeze, recursive=True):
+        """\
+        Freeze and unfreeze the branches.
 
-    def _unfreeze_struct(self, recursive=True):
-        object.__setattr__(self, "_freeze_struct_", False)
+        We a tree is frozen, branches can't be modified, created or deleted.
+        :param freeze:     True for freezing, False for unfreezing
+        :param recursive:  to apply the change on subbranches as well.
+        """
+        object.__setattr__(self, "_freeze_struct_", freeze)
         if recursive:
-            for branch in self._branches.values():
-                branch._unfreeze_struct(recursive=True)
+            for branch in self._branches_.values():
+                branch._freeze_struct(freeze, recursive=True)
+
+    def _strict(self, strict=True, recursive=True):
+        """\
+        Make a tree strict or not.
+
+        In a strict tree, attributes cannot be created unless they have been
+        described using the method `_describe()`.
+        :param freeze:     True for strict, False for unstrict
+        :param recursive:  to apply the change on subbranches as well.
+        """
+        object.__setattr__(self, "_strict_", strict)
+        if recursive:
+            for branch in self._branches_.values():
+                branch._strict(strict, recursive=True)
 
     def _update(self, tree, overwrite=True, descriptions=True):
         """\
@@ -423,26 +429,26 @@ class Tree(object):
         """
         if isinstance(tree, Tree):
             if descriptions:
-                for key, value in tree._instance_check.items():
-                    if overwrite or key not in self._instance_check:
-                        self._instance_check[key] = value
-                for key, value in tree._validate_check.items():
-                    if overwrite or key not in self._validate_check:
-                        self._validate_check[key] = value
+                for key, value in tree._isinstance_.items():
+                    if overwrite or key not in self._isinstance_:
+                        self._isinstance_[key] = value
+                for key, value in tree._validate_.items():
+                    if overwrite or key not in self._validate_:
+                        self._validate_[key] = value
                 for key, value in tree._docstrings_.items():
                     if overwrite or key not in self._docstrings_:
                         self._docstrings_[key] = value
-            for key, value in tree._leaves.items():
-                if key in self._leaves:
+            for key, value in tree._leaves_.items():
+                if key in self._leaves_:
                     if overwrite:
                         self.__setattr__(key, value)
                 else:
                     self.__setattr__(key, value)
 
-            for branchname, branch in tree._branches.items():
-                if branchname not in self._branches:
+            for branchname, branch in tree._branches_.items():
+                if branchname not in self._branches_:
                     self._branch(branchname)
-                self._branches[branchname]._update(branch, overwrite=overwrite,
+                self._branches_[branchname]._update(branch, overwrite=overwrite,
                                                            descriptions=descriptions)
         else:
             if not overwrite:
@@ -466,6 +472,11 @@ class Tree(object):
     def __str__(self):
         return '\n'.join(line for line in self._lines())
 
+    def __iter__(self):
+        """Iter over keys."""
+        for key in self.keys():
+            yield key
+
     def _keys(self):
         return (key for key, value in self._items())
 
@@ -473,8 +484,8 @@ class Tree(object):
         return (value for key, value in self._items())
 
     def _items(self):
-        for item in self._leaves.items():
+        for item in self._leaves_.items():
             yield item
-        for branchname, branch in self._branches.items():
+        for branchname, branch in self._branches_.items():
             for key, value in branch._items():
                 yield ('{}.{}'.format(branchname, key), value)

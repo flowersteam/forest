@@ -10,13 +10,13 @@ class TestFreeze(unittest.TestCase):
         tc = forest.Tree()
         tc._branch('a')
 
-        tc._freeze()
+        tc._freeze(True)
         with self.assertRaises(ValueError):
             tc.a.b = 1
         with self.assertRaises(ValueError):
             tc._branch('b')
 
-        tc._unfreeze()
+        tc._freeze(False)
         tc.a.b = 1
         tc._branch('b')
 
@@ -25,7 +25,7 @@ class TestFreeze(unittest.TestCase):
         tc._branch('a')
         tc.a.b = 1
 
-        tc._freeze_struct()
+        tc._freeze_struct(True)
         with self.assertRaises(ValueError):
             tc.a.c = 1
         tc.a.b = 2
