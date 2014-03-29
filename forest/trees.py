@@ -3,11 +3,15 @@ A tree structure with dynamic attribute interface.
 """
 from __future__ import print_function, division
 
+import collections
 import copy
+import re
 
 # a unique object
 _uid = object()
-
+# valid keys and leaves names
+_valid_leaf = re.compile("[A-Za-z][_a-zA-Z0-9]*$")
+_valid_key  = re.compile("[A-Za-z][_a-zA-Z0-9]*(\.[A-Za-z][_a-zA-Z0-9]*)*$")
 
 class Tree(object):
     """
@@ -237,16 +241,24 @@ class Tree(object):
                 branch._check(tree._branches_[key], struct=struct)
 
     @staticmethod
-    def _check_key(key):
+    def _check_key(key, leaf=False):
         """filter acceptable element keys"""
         try:
             assert isinstance(key, str) and key != ''
-        except (AssertionError, IndexError):
+        except AssertionError:
             raise ValueError(("element keys should be non-empty strings, "
                               "{} was provided").format(key))
-        if key[0] == '_':
-            raise ValueError(("element keys should not start with an "
-                              "underscore, {} was provided").format(key))
+
+        regex = _valid_key
+        if leaf:
+            regex = _valid_leaf
+        if regex.match(key) is None:
+            if key[0] == '_':
+                raise ValueError(("leaf names should not start with an "
+                                  "underscore, '{}' was provided").format(key))
+            raise ValueError(("leaf not a valid attribute name, '{}'"
+                              " was provided").format(key))
+
 
 
     def _get(self, key, default):
@@ -261,7 +273,7 @@ class Tree(object):
 
     def __getattr__(self, key):
         try:
-            self._check_key(key)
+            self._check_key(key, leaf=True)
             try:
                 return self._branches_[key]
             except KeyError:
@@ -286,7 +298,7 @@ class Tree(object):
         """
         if self._freeze_:
             raise ValueError("Can't modify a frozen tree")
-        self._check_key(key)
+        self._check_key(key, leaf=True)
         if self._freeze_struct_ and key not in self._leaves_ and key not in self._branches_:
             raise ValueError("Can't modify the frozen structure of the tree")
         self._check_value(key, value)
@@ -361,7 +373,7 @@ class Tree(object):
             return self._branches_[path[0]].__delitem__(path[1])
 
     def __delattr__(self, key):
-        self._check_key(key)
+        self._check_key(key, leaf=True)
         try:
             del self._leaves_[key]
         except KeyError:
@@ -489,3 +501,15 @@ class Tree(object):
         for branchname, branch in self._branches_.items():
             for key, value in branch._items():
                 yield ('{}.{}'.format(branchname, key), value)
+
+    def __lt__(self, a):
+        return NotImplemented
+
+    def __le__(self, a):
+        return NotImplemented
+
+    def __ge__(self, a):
+        return NotImplemented
+
+    def __gt__(self, a):
+        return NotImplemented
