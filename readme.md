@@ -17,7 +17,7 @@ t.experiment1.duration = 3600.0
 
 ### Design
 
-`forest` has been designed to be easy to use while ensuring data integrity. It features many ways to protect the tree data against badly programmed piece of code. Because the main goal of the authors of the library was to ensure that their scientific experiments were correct, some of the design choices led to an characteristically unpythonic API.
+`forest` has been designed to be easy to use while ensuring data integrity. It features many ways to protect the tree data incorrect inputs. It also features coverage and history logging, enabling the ability to check that the data structure was correctly used during an experiment. Because the main goal of the authors of the library was to ensure that their scientific experiments were correct, some of the design choices led to an characteristically unpythonic API.
 
 #### Tree branches have to be explicitely declared
 
@@ -44,7 +44,7 @@ Branches and leaves names cannot start with an underscore. Inversely, all public
 
 #### Not a lean data structure
 
-The datastructure is geared toward preventing and detecting miuse. That creates overhead that makes `Tree` ill fitted for intensive applications.
+The datastructure is geared toward preventing and detecting misuse. That creates overhead that makes `Tree` ill fitted for intensive applications.
 
 #### Values can optionally be validated when they are set
 
