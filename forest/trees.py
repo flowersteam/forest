@@ -329,6 +329,52 @@ class Tree(object):
                 self._branch(path[0])
             self._branches_[path[0]].__setitem__(path[1], value)
 
+    def _pop(self, key, d=_uid):
+        """\
+        Remove specified key and return the corresponding value.
+        If key is not found, d is returned if given, otherwise KeyError is 
+        raised.
+        """
+        self._check_key(key)
+        path = key.split('.', 1)
+
+        if len(path) == 1:
+            if d != _uid:
+                return self._leaves_.pop(key, d)
+            else:
+                return self._leaves_.pop(key)
+        else:
+            return self._branches_[path[0]]._pop(path[1], d)
+
+    def _popitem(self):
+        """\
+        Remove and return a tuple (key, value) from the tree.
+
+        :raise KeyError:  when tree is empty.
+        ..note:: direct leaves will always be popped first.
+        """
+
+        if len(self._leaves_) > 0:
+            return self._leaves_.popitem()
+        else:
+            for branchname, branch in self._branches_.items():
+                try:
+                    k, v = branch._popitem()
+                    return ('{}.{}'.format(branchname, k), v)
+                except KeyError:
+                    pass
+        raise KeyError('tree is empty')
+
+    @classmethod
+    def _fromkeys(cls, keys, value=None):
+        """\
+        Creates a new dictionary with keys from seq and values set to value.
+        """
+        t = cls()
+        for key in keys:
+            t[key] = value
+        return t
+
     def _clear(self, struct=True, typecheck=False):
         """Remove all leaves and branch from the tree.
 
@@ -513,3 +559,4 @@ class Tree(object):
 
     def __gt__(self, a):
         return NotImplemented
+
