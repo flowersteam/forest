@@ -44,14 +44,6 @@ class TestCreate(unittest.TestCase):
         with self.assertRaises(ValueError):
             t = forest.Tree._fromkeys(('a', 'a.d'))
         
-    def test_fromkeys0(self):
-        t = forest.Tree._fromkeys(('a', 'c.d'))
-
-        self.assertEqual(set(t._items()),set((('a', None), ('c.d', None))))
-
-        with self.assertRaises(ValueError):
-            t = forest.Tree._fromkeys(('a', 'a.d'))
-
     def test_fromkeys1(self):
         tc = forest.Tree()
         t = tc._fromkeys(('a', 'c.d'), 3)

@@ -18,9 +18,9 @@ class Tree(object):
     A Tree is a set of elements, some of which are other trees.
     """
 
-    def __init__(self, existing=None, strict=False):
+    def __init__(self, tree=None, strict=False):
         """
-        :param existing: an existing tree or dictionary.
+        :param tree: an existing tree or dictionary to copy value from.
         """
         object.__setattr__(self, '_leaves_', {})
         object.__setattr__(self, '_isinstance_', {})
@@ -32,38 +32,8 @@ class Tree(object):
         object.__setattr__(self, '_freeze_', False)
         object.__setattr__(self, '_freeze_struct_', False)
         object.__setattr__(self, '_strict_', strict)
-        if existing is not None:
-            self._update(existing, overwrite=True)
-
-    @classmethod
-    def _from_file(cls, filename):
-        with open(filename, 'r') as f:
-            lines = f.readlines()
-        d = {}
-        for line in lines:
-            try:
-                key, value = line.split('=')
-                key = key.strip()
-                value = eval(value.strip(), {}, {})
-                d[key] = value
-            except ValueError:
-                pass
-        t = cls()
-        t._update(d, overwrite=True)
-        return t
-
-    def _to_file(self, filename):
-        with open(filename, 'w') as f:
-            f.write('\n'.join(line for line in self._lines()))
-
-    def _copy(self, deep=False):
-        """convenience copy method
-
-        :param deep:  if True, perform a deep copy
-        """
-        if deep:
-            return self.__deepcopy__({})
-        return self.__copy__()
+        if tree is not None:
+            self._update(tree, overwrite=True)
 
     def __copy__(self):
         new_tree = Tree()
@@ -94,7 +64,39 @@ class Tree(object):
         object.__setattr__(new_tree, '_strict_', self._strict_)
         return new_tree
 
+    def _copy(self, deep=False):
+        """\
+        Convenience copy method.
+
+        :param deep:  if True, perform a deep copy
+        """
+        if deep:
+            return self.__deepcopy__({})
+        return self.__copy__()
+
+    @classmethod
+    def _from_file(cls, filename):
+        with open(filename, 'r') as f:
+            lines = f.readlines()
+        d = {}
+        for line in lines:
+            try:
+                key, value = line.split('=')
+                key = key.strip()
+                value = eval(value.strip(), {}, {})
+                d[key] = value
+            except ValueError:
+                pass
+        t = cls()
+        t._update(d, overwrite=True)
+        return t
+
+    def _to_file(self, filename):
+        with open(filename, 'w') as f:
+            f.write('\n'.join(line for line in self._lines()))
+
     def _coverage(self, key):
+        """Return the number of time the value of the key was accessed."""
         path = key.split('.', 1)
         if len(path) == 1:
             return self._coverage_[key]
@@ -102,6 +104,7 @@ class Tree(object):
             return self._branches_[path[0]]._coverage(path[1])
 
     def _history(self, key):
+        """Return the successive values that the key was set to."""
         path = key.split('.', 1)
         if len(path) == 1:
             return self._history_[key]
@@ -109,7 +112,7 @@ class Tree(object):
             return self._branches_[path[0]]._history(path[1])
 
     def _branch(self, name, value=None, overwrite=False, nested=True):
-        """
+        """\
         Create a new branch in the tree if it does not already exists.
         Can create nested branches.
 
@@ -188,15 +191,14 @@ class Tree(object):
                 self._isinstance(key, instanceof),
                 self._validate(key, validate))
 
-    def _complete(self):
+    def _unset(self):
         """Return all described attributes that are not set"""
-
         notset = set(self._docstrings_.keys())
         notset.update(self._validate_.keys())
         notset.update(self._isinstance_.keys())
         notset.difference_update(self._leaves_.keys())
         for branchname, branch in self._branches_.items():
-            notset.update(('{}.{}'.format(branchname, e) for e in branch._complete()))
+            notset.update(('{}.{}'.format(branchname, e) for e in branch._unset()))
         return notset
 
     def _check_value(self, key, value):
@@ -351,6 +353,7 @@ class Tree(object):
         Remove and return a tuple (key, value) from the tree.
 
         :raise KeyError:  when tree is empty.
+        
         ..note:: direct leaves will always be popped first.
         """
 

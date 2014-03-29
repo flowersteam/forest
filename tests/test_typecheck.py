@@ -174,27 +174,27 @@ class TestTypeCheck(unittest.TestCase):
         with self.assertRaises(ValueError):
             t._isinstance('a.b', int)
 
-    def test_complete(self):
+    def test_unset(self):
         t = forest.Tree()
 
         t._isinstance('f', int)
-        self.assertEqual(t._complete(), set(('f')))
+        self.assertEqual(t._unset(), set(('f')))
 
         t._docstring('a.b', int)
-        self.assertEqual(t._complete(), set(('f', 'a.b')))
+        self.assertEqual(t._unset(), set(('f', 'a.b')))
 
         def validate_c(value):
             return 0 <= value <= 256
         t._validate('a.e.c', validate_c)
-        self.assertEqual(t._complete(), set(('f', 'a.b', 'a.e.c')))
+        self.assertEqual(t._unset(), set(('f', 'a.b', 'a.e.c')))
 
         t._describe('c.b', docstring='can describe things on non existing branches', instanceof=int)
-        self.assertEqual(t._complete(), set(('f', 'a.b', 'a.e.c', 'c.b')))
+        self.assertEqual(t._unset(), set(('f', 'a.b', 'a.e.c', 'c.b')))
 
         t.a.b = 2
-        self.assertEqual(t._complete(), set(('f', 'a.e.c', 'c.b')))
+        self.assertEqual(t._unset(), set(('f', 'a.e.c', 'c.b')))
         t.f = 42
-        self.assertEqual(t._complete(), set(('a.e.c', 'c.b')))
+        self.assertEqual(t._unset(), set(('a.e.c', 'c.b')))
 
     def test_update(self):
         t = forest.Tree()
