@@ -227,12 +227,14 @@ class Tree(object):
             raise TypeError(("can't create new leaf '{}' in a strict tree without a "
                              "type or validation function declared.").format(key)) # TODO correct relative path error
 
-    def _check(self, tree, struct=False):
+    def _check(self, tree=None, struct=False):
         """Check conformity with another tree type checks and validate functions
 
         :param struct:      if True, verifies that both tree have the same branches
         :raises TypeError:  if check fails
         """
+        if tree is None:
+            tree = self
         for key, leaf in self._leaves_.items():
             tree._check_value(key, leaf)
         if struct and set(self._branches_.keys()) != set(tree._branches_.keys()):
@@ -260,8 +262,6 @@ class Tree(object):
                                   "underscore, '{}' was provided").format(key))
             raise ValueError(("leaf not a valid attribute name, '{}'"
                               " was provided").format(key))
-
-
 
     def _get(self, key, default):
         try:
@@ -334,7 +334,7 @@ class Tree(object):
     def _pop(self, key, d=_uid):
         """\
         Remove specified key and return the corresponding value.
-        If key is not found, d is returned if given, otherwise KeyError is 
+        If key is not found, d is returned if given, otherwise KeyError is
         raised.
         """
         self._check_key(key)
@@ -353,7 +353,7 @@ class Tree(object):
         Remove and return a tuple (key, value) from the tree.
 
         :raise KeyError:  when tree is empty.
-        
+
         ..note:: direct leaves will always be popped first.
         """
 
@@ -463,7 +463,9 @@ class Tree(object):
         Make a tree strict or not.
 
         In a strict tree, attributes cannot be created unless they have been
-        described using the method `_describe()`.
+        described using the method `_describe()`. When the tree is made strict,
+        existing leaves will be checked, and TypeError will be raised if not
+        all are described.
         :param freeze:     True for strict, False for unstrict
         :param recursive:  to apply the change on subbranches as well.
         """
@@ -471,6 +473,8 @@ class Tree(object):
         if recursive:
             for branch in self._branches_.values():
                 branch._strict(strict, recursive=True)
+        if strict:
+            self._check()
 
     def _update(self, tree, overwrite=True, descriptions=True):
         """\
