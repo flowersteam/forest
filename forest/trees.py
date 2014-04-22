@@ -476,15 +476,41 @@ class Tree(object):
         if strict:
             self._check()
 
-    def _update(self, tree, overwrite=True, descriptions=True):
+    def _described_set(self, docstring=True):
+        described = set(self._docstrings_.keys())
+        described.update(self._validate_.keys())
+        described.update(self._isinstance_.keys())
+        for branchname, branch in self._branches_.items():
+            described.update(('{}.{}'.format(branchname, e) for e in branch._described_set()))
+        return described
+
+    def _described(self, leaf=None, docstring=True):
+        """\
+        Return True if the leaf is described by a docstring, a instance check or
+        a validation function.
+
+        :param docstring:  if False, does not consider only a docstring a proper
+                           description.
+        """
+        described = leaf in self._isinstance_ or leaf in self._validate_
+        if docstring:
+            described = described or leaf in self._docstrings_
+        return described
+
+
+    def _update(self, tree, overwrite=True, descriptions=True, described_only=False):
         """\
         Update the tree with values of another tree. If the other tree possess
         branches not present in this one (and structure is not frozen), those
         branches will be created as well.
 
-        :param overwrite:    if False, value already present in the tree will not
-                             be modified (default True).
-        :param descriptions: if True, copy the descriptions as well
+        :param overwrite:      if False, value already present in the tree will not
+                               be modified (default True).
+        :param descriptions:   if True, copy the descriptions as well
+        :param described_only: if True, only update leaves that are described in self.
+                               Note that this takes into account new descriptions if
+                               the description flag is True.
+                               New branches will be created regardless.
 
         ..raise:: TypeError if the tree is frozen and an assignement is needed,
                   or the structure is frozen and an element of the other tree
@@ -503,19 +529,24 @@ class Tree(object):
                 for key, value in tree._docstrings_.items():
                     if overwrite or key not in self._docstrings_:
                         self._docstrings_[key] = value
+
             for key, value in tree._leaves_.items():
-                if key in self._leaves_:
-                    if overwrite:
+                if not described_only or (described_only and self._described(key)):
+                    if key in self._leaves_:
+                        if overwrite:
+                            self.__setattr__(key, value)
+                    else:
                         self.__setattr__(key, value)
-                else:
-                    self.__setattr__(key, value)
 
             for branchname, branch in tree._branches_.items():
                 if branchname not in self._branches_:
                     self._branch(branchname)
                 self._branches_[branchname]._update(branch, overwrite=overwrite,
-                                                           descriptions=descriptions)
+                                                            descriptions=descriptions,
+                                                            described_only=described_only)
         else:
+            if described_only:
+                raise NotImplementedError
             if not overwrite:
                 for key, value in tree.items():
                     if not key in self:
