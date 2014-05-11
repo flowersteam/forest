@@ -406,7 +406,7 @@ class Tree(object):
         self._check_key(key)
         path = key.split('.', 1)
         if len(path) == 1:
-            return key in self._leaves_ or key in self._leaves_
+            return key in self._leaves_ or key in self._branches_
         else:
             return path[0] in self._branches_ and path[1] in self._branches_[path[0]]
 
@@ -507,10 +507,10 @@ class Tree(object):
         :param overwrite:      if False, value already present in the tree will not
                                be modified (default True).
         :param descriptions:   if True, copy the descriptions as well
-        :param described_only: if True, only update leaves that are described in self.
-                               Note that this takes into account new descriptions if
-                               the description flag is True.
-                               New branches will be created regardless.
+        :param described_only: if True, only update leaves that are described in self,
+                               or, if `description` is True, descriptions coming from
+                               tree, as long a they don't necessitate new branches in
+                               self (cheap way to avoid nasty loops).
 
         ..raise:: TypeError if the tree is frozen and an assignement is needed,
                   or the structure is frozen and an element of the other tree
@@ -540,7 +540,10 @@ class Tree(object):
 
             for branchname, branch in tree._branches_.items():
                 if branchname not in self._branches_:
-                    self._branch(branchname)
+                    if not described_only:
+                        self._branch(branchname)
+                    else:
+                        continue
                 self._branches_[branchname]._update(branch, overwrite=overwrite,
                                                             descriptions=descriptions,
                                                             described_only=described_only)
