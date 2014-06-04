@@ -186,10 +186,23 @@ class Tree(object):
                 self._branch(path[0])
             return self._branches_[path[0]]._docstring(path[1], docstring=docstring)
 
-    def _describe(self, key, docstring=_uid, instanceof=_uid, validate=_uid):
+    def _default(self, key, default=_uid):
+        path = key.split('.', 1)
+        if len(path) == 1:
+            if default is not _uid and key not in self:
+                self[key] = default
+            return self._get(key, None)
+        else:
+            if path[0] not in self._branches_ and validate is not _uid:
+                self._branch(path[0])
+            return self._branches_[path[0]]._default(path[1], default)
+
+
+    def _describe(self, key, docstring=_uid, instanceof=_uid, validate=_uid, default=_uid):
         return (self._docstring(key, docstring),
                 self._isinstance(key, instanceof),
-                self._validate(key, validate))
+                self._validate(key, validate),
+                self._default(key, default))
 
     def _unset(self):
         """Return all described attributes that are not set"""
