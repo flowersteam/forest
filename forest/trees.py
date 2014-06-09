@@ -149,7 +149,7 @@ class Tree(object):
                 else:
                     self._branches_[path[0]] = Tree(strict=self._strict_)
         if len(path) == 2:
-            self._branches_[path[0]]._branch(path[1], overwrite=overwrite, nested=nested)
+            self._branches_[path[0]]._branch(path[1], value=value, overwrite=overwrite, nested=nested)
 
         return self._branches_[path[0]]
 
