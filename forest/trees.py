@@ -144,7 +144,7 @@ class Tree(object):
                                  "with that name is already described.".format(path[0]))
         else:
             if path[0] not in self._branches_.keys():
-                if value is not None:
+                if len(path) == 1 and value is not None:
                     self._branches_[path[0]] = value
                 else:
                     self._branches_[path[0]] = Tree(strict=self._strict_)
@@ -574,6 +574,7 @@ class Tree(object):
     def _lines(self):
         lines = []
         for key, value in self._items():
+            print(key, id(value))
             try:
                 r = value.__repr__()
             except (AttributeError, TypeError):
