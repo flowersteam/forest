@@ -587,7 +587,7 @@ class Tree(object):
 
     def __iter__(self):
         """Iter over keys."""
-        for key in self.keys():
+        for key in self._keys():
             yield key
 
     def _keys(self):
