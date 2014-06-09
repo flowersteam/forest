@@ -574,7 +574,6 @@ class Tree(object):
     def _lines(self):
         lines = []
         for key, value in self._items():
-            print(key, id(value))
             try:
                 r = value.__repr__()
             except (AttributeError, TypeError):
