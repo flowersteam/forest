@@ -74,6 +74,9 @@ class Tree(object):
             return self.__deepcopy__({})
         return self.__copy__()
 
+    def _deepcopy(self):
+        return self._copy(deep=True)
+
     @classmethod
     def _from_file(cls, filename):
         with open(filename, 'r') as f:
@@ -219,26 +222,30 @@ class Tree(object):
         if the tree is strict, then a check must be defined
         """
         check_exists = False
-        if key in self._isinstance_:
-            if self._isinstance_[key] is not None:
-                check_exists = True
-                if not isinstance(value, self._isinstance_[key]):
-                    raise TypeError(("value for leaf {} must be an instance of {};"
-                                     " got {} instead.").format(key,
-                                     self._isinstance_[key], type(value))) # TODO correct relative path error
-        if key in self._validate_:
-            if self._validate_[key] is not None:
-                check_exists = True
-                try:
-                    check = self._validate_[key](value)
-                except Exception:
-                    check = False
-                if not check:
-                    raise TypeError(("value for leaf {} did not pass user-defined "
-                                     "validating function").format(key)) # TODO correct relative path error
-        if self._strict_ and not check_exists: # FIXME: is this the correct place to do this
-            raise TypeError(("can't create new leaf '{}' in a strict tree without a "
-                             "type or validation function declared.").format(key)) # TODO correct relative path error
+        if isinstance(value, Tree):
+            if self._strict_ and key not in self._branches_:
+                raise TypeError("can't create a branch {} implicitely in a strict tree".format(key))
+        else:
+            if key in self._isinstance_:
+                if self._isinstance_[key] is not None:
+                    check_exists = True
+                    if not isinstance(value, self._isinstance_[key]):
+                        raise TypeError(("value for leaf {} must be an instance of {};"
+                                         " got {} instead.").format(key,
+                                         self._isinstance_[key], type(value))) # TODO correct relative path error
+            if key in self._validate_:
+                if self._validate_[key] is not None:
+                    check_exists = True
+                    try:
+                        check = self._validate_[key](value)
+                    except Exception:
+                        check = False
+                    if not check:
+                        raise TypeError(("value for leaf {} did not pass user-defined "
+                                         "validating function").format(key)) # TODO correct relative path error
+            if self._strict_ and not check_exists: # FIXME: is this the correct place to do this
+                raise TypeError(("can't create new leaf '{}' in a strict tree without a "
+                                 "type or validation function declared.").format(key)) # TODO correct relative path error
 
     def _check(self, tree=None, struct=False):
         """Check conformity with another tree type checks and validate functions
