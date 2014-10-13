@@ -74,6 +74,9 @@ class Tree(object):
             return self.__deepcopy__({})
         return self.__copy__()
 
+    def _deepcopy(self):
+        return self._copy(deep=True)
+
     @classmethod
     def _from_file(cls, filename):
         with open(filename, 'r') as f:
@@ -144,12 +147,12 @@ class Tree(object):
                                  "with that name is already described.".format(path[0]))
         else:
             if path[0] not in self._branches_.keys():
-                if value is not None:
+                if len(path) == 1 and value is not None:
                     self._branches_[path[0]] = value
                 else:
                     self._branches_[path[0]] = Tree(strict=self._strict_)
         if len(path) == 2:
-            self._branches_[path[0]]._branch(path[1], overwrite=overwrite, nested=nested)
+            self._branches_[path[0]]._branch(path[1], value=value, overwrite=overwrite, nested=nested)
 
         return self._branches_[path[0]]
 
@@ -186,10 +189,23 @@ class Tree(object):
                 self._branch(path[0])
             return self._branches_[path[0]]._docstring(path[1], docstring=docstring)
 
-    def _describe(self, key, docstring=_uid, instanceof=_uid, validate=_uid):
+    def _default(self, key, default=_uid):
+        path = key.split('.', 1)
+        if len(path) == 1:
+            if default is not _uid and key not in self:
+                self[key] = default
+            return self._get(key, None)
+        else:
+            if path[0] not in self._branches_ and validate is not _uid:
+                self._branch(path[0])
+            return self._branches_[path[0]]._default(path[1], default)
+
+
+    def _describe(self, key, docstring=_uid, instanceof=_uid, validate=_uid, default=_uid):
         return (self._docstring(key, docstring),
                 self._isinstance(key, instanceof),
-                self._validate(key, validate))
+                self._validate(key, validate),
+                self._default(key, default))
 
     def _unset(self):
         """Return all described attributes that are not set"""
@@ -206,33 +222,39 @@ class Tree(object):
         if the tree is strict, then a check must be defined
         """
         check_exists = False
-        if key in self._isinstance_:
-            if self._isinstance_[key] is not None:
-                check_exists = True
-                if not isinstance(value, self._isinstance_[key]):
-                    raise TypeError(("value for leaf {} must be an instance of {};"
-                                     " got {} instead.").format(key,
-                                     self._isinstance_[key], type(value))) # TODO correct relative path error
-        if key in self._validate_:
-            if self._validate_[key] is not None:
-                check_exists = True
-                try:
-                    check = self._validate_[key](value)
-                except Exception:
-                    check = False
-                if not check:
-                    raise TypeError(("value for leaf {} did not pass user-defined "
-                                     "validating function").format(key)) # TODO correct relative path error
-        if self._strict_ and not check_exists: # FIXME: is this the correct place to do this
-            raise TypeError(("can't create new leaf '{}' in a strict tree without a "
-                             "type or validation function declared.").format(key)) # TODO correct relative path error
+        if isinstance(value, Tree):
+            if self._strict_ and key not in self._branches_:
+                raise TypeError("can't create a branch {} implicitely in a strict tree".format(key))
+        else:
+            if key in self._isinstance_:
+                if self._isinstance_[key] is not None:
+                    check_exists = True
+                    if not isinstance(value, self._isinstance_[key]):
+                        raise TypeError(("value for leaf {} must be an instance of {};"
+                                         " got {} instead.").format(key,
+                                         self._isinstance_[key], type(value))) # TODO correct relative path error
+            if key in self._validate_:
+                if self._validate_[key] is not None:
+                    check_exists = True
+                    try:
+                        check = self._validate_[key](value)
+                    except Exception:
+                        check = False
+                    if not check:
+                        raise TypeError(("value for leaf {} did not pass user-defined "
+                                         "validating function").format(key)) # TODO correct relative path error
+            if self._strict_ and not check_exists: # FIXME: is this the correct place to do this
+                raise TypeError(("can't create new leaf '{}' in a strict tree without a "
+                                 "type or validation function declared.").format(key)) # TODO correct relative path error
 
-    def _check(self, tree, struct=False):
+    def _check(self, tree=None, struct=False):
         """Check conformity with another tree type checks and validate functions
 
         :param struct:      if True, verifies that both tree have the same branches
         :raises TypeError:  if check fails
         """
+        if tree is None:
+            tree = self
         for key, leaf in self._leaves_.items():
             tree._check_value(key, leaf)
         if struct and set(self._branches_.keys()) != set(tree._branches_.keys()):
@@ -260,8 +282,6 @@ class Tree(object):
                                   "underscore, '{}' was provided").format(key))
             raise ValueError(("leaf not a valid attribute name, '{}'"
                               " was provided").format(key))
-
-
 
     def _get(self, key, default):
         try:
@@ -334,7 +354,7 @@ class Tree(object):
     def _pop(self, key, d=_uid):
         """\
         Remove specified key and return the corresponding value.
-        If key is not found, d is returned if given, otherwise KeyError is 
+        If key is not found, d is returned if given, otherwise KeyError is
         raised.
         """
         self._check_key(key)
@@ -353,7 +373,7 @@ class Tree(object):
         Remove and return a tuple (key, value) from the tree.
 
         :raise KeyError:  when tree is empty.
-        
+
         ..note:: direct leaves will always be popped first.
         """
 
@@ -367,6 +387,12 @@ class Tree(object):
                 except KeyError:
                     pass
         raise KeyError('tree is empty')
+
+    def _rename(self, old_key, new_key):
+        if new_key in self:
+            raise KeyError('"{}" already in the tree. Use force=True to override'.format(new_key))
+        value = self._pop(new_key)
+        self[new_key] = value # TODO: make more robust
 
     @classmethod
     def _fromkeys(cls, keys, value=None):
@@ -406,7 +432,7 @@ class Tree(object):
         self._check_key(key)
         path = key.split('.', 1)
         if len(path) == 1:
-            return key in self._leaves_ or key in self._leaves_
+            return key in self._leaves_ or key in self._branches_
         else:
             return path[0] in self._branches_ and path[1] in self._branches_[path[0]]
 
@@ -463,7 +489,9 @@ class Tree(object):
         Make a tree strict or not.
 
         In a strict tree, attributes cannot be created unless they have been
-        described using the method `_describe()`.
+        described using the method `_describe()`. When the tree is made strict,
+        existing leaves will be checked, and TypeError will be raised if not
+        all are described.
         :param freeze:     True for strict, False for unstrict
         :param recursive:  to apply the change on subbranches as well.
         """
@@ -471,16 +499,44 @@ class Tree(object):
         if recursive:
             for branch in self._branches_.values():
                 branch._strict(strict, recursive=True)
+        if strict:
+            self._check()
 
-    def _update(self, tree, overwrite=True, descriptions=True):
+    def _described_set(self, docstring=True):
+        described = set(self._docstrings_.keys())
+        described.update(self._validate_.keys())
+        described.update(self._isinstance_.keys())
+        for branchname, branch in self._branches_.items():
+            described.update(('{}.{}'.format(branchname, e) for e in branch._described_set()))
+        return described
+
+    def _described(self, leaf=None, docstring=True):
+        """\
+        Return True if the leaf is described by a docstring, a instance check or
+        a validation function.
+
+        :param docstring:  if False, does not consider only a docstring a proper
+                           description.
+        """
+        described = leaf in self._isinstance_ or leaf in self._validate_
+        if docstring:
+            described = described or leaf in self._docstrings_
+        return described
+
+
+    def _update(self, tree, overwrite=True, descriptions=True, described_only=False):
         """\
         Update the tree with values of another tree. If the other tree possess
         branches not present in this one (and structure is not frozen), those
         branches will be created as well.
 
-        :param overwrite:    if False, value already present in the tree will not
-                             be modified (default True).
-        :param descriptions: if True, copy the descriptions as well
+        :param overwrite:      if False, value already present in the tree will not
+                               be modified (default True).
+        :param descriptions:   if True, copy the descriptions as well
+        :param described_only: if True, only update leaves that are described in self,
+                               or, if `description` is True, descriptions coming from
+                               tree, as long a they don't necessitate new branches in
+                               self (cheap way to avoid nasty loops).
 
         ..raise:: TypeError if the tree is frozen and an assignement is needed,
                   or the structure is frozen and an element of the other tree
@@ -499,19 +555,27 @@ class Tree(object):
                 for key, value in tree._docstrings_.items():
                     if overwrite or key not in self._docstrings_:
                         self._docstrings_[key] = value
+
             for key, value in tree._leaves_.items():
-                if key in self._leaves_:
-                    if overwrite:
+                if not described_only or (described_only and self._described(key)):
+                    if key in self._leaves_:
+                        if overwrite:
+                            self.__setattr__(key, value)
+                    else:
                         self.__setattr__(key, value)
-                else:
-                    self.__setattr__(key, value)
 
             for branchname, branch in tree._branches_.items():
                 if branchname not in self._branches_:
-                    self._branch(branchname)
+                    if not described_only:
+                        self._branch(branchname)
+                    else:
+                        continue
                 self._branches_[branchname]._update(branch, overwrite=overwrite,
-                                                           descriptions=descriptions)
+                                                            descriptions=descriptions,
+                                                            described_only=described_only)
         else:
+            if described_only:
+                raise NotImplementedError
             if not overwrite:
                 for key, value in tree.items():
                     if not key in self:
@@ -535,7 +599,7 @@ class Tree(object):
 
     def __iter__(self):
         """Iter over keys."""
-        for key in self.keys():
+        for key in self._keys():
             yield key
 
     def _keys(self):
@@ -550,6 +614,21 @@ class Tree(object):
         for branchname, branch in self._branches_.items():
             for key, value in branch._items():
                 yield ('{}.{}'.format(branchname, key), value)
+
+    def _children_keys(self):
+        """Return only the immediate children names (branches and leaves)"""
+        return (key for key, value in self._items())
+
+    def _children_values(self):
+        """Return only the immediate children names (branches and leaves)"""
+        return (value for key, value in self._items())
+
+    def _children_items(self):
+        """Return only the immediate children names (branches and leaves)"""
+        for item in self._leaves_.items():
+            yield item
+        for item in self._branches_.items():
+            yield item
 
     def __lt__(self, a):
         return NotImplemented

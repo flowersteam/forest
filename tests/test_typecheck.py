@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 import unittest
+import collections
 
 import env
 import forest
@@ -140,6 +141,16 @@ class TestTypeCheck(unittest.TestCase):
         with self.assertRaises(TypeError):
             t2._check(tc)
 
+        t2.a.c = 2.0
+        t2.a.b = 50
+        t2._update(tc)
+        t2._check()
+
+        t2.a.d = 50
+        with self.assertRaises(TypeError):
+            t2._strict(True)
+
+
     def test_check_struct(self):
         tc = forest.Tree()
         tc._branch('a')
@@ -207,6 +218,19 @@ class TestTypeCheck(unittest.TestCase):
             t2.f = 2
         t2._update(t)
         t2.f = 2
+
+    def test_describe2(self):
+        defcfg = forest.Tree()
+        defcfg._describe('m_channels', instanceof=collections.Iterable,
+                         docstring='Motor channels to generate random order of')
+        defcfg._describe('s_channels', instanceof=collections.Iterable,
+                         docstring='Sensory channels to generate random goal from')
+        defcfg._describe('models.fwd', instanceof=str,
+                         docstring='The name of the forward model to use')
+        defcfg._describe('models.inv', instanceof=str,
+                         docstring='The name of the invserse model to use')
+        defcfg._describe('models.kwargs', instanceof=dict,
+                         docstring='optional keyword arguments')
 
 if __name__ == '__main__':
     unittest.main()
