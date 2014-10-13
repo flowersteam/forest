@@ -388,6 +388,12 @@ class Tree(object):
                     pass
         raise KeyError('tree is empty')
 
+    def _rename(self, old_key, new_key):
+        if new_key in self:
+            raise KeyError('"{}" already in the tree. Use force=True to override'.format(new_key))
+        value = self._pop(new_key)
+        self[new_key] = value # TODO: make more robust
+
     @classmethod
     def _fromkeys(cls, keys, value=None):
         """\
@@ -608,6 +614,21 @@ class Tree(object):
         for branchname, branch in self._branches_.items():
             for key, value in branch._items():
                 yield ('{}.{}'.format(branchname, key), value)
+
+    def _children_keys(self):
+        """Return only the immediate children names (branches and leaves)"""
+        return (key for key, value in self._items())
+
+    def _children_values(self):
+        """Return only the immediate children names (branches and leaves)"""
+        return (value for key, value in self._items())
+
+    def _children_items(self):
+        """Return only the immediate children names (branches and leaves)"""
+        for item in self._leaves_.items():
+            yield item
+        for item in self._branches_.items():
+            yield item
 
     def __lt__(self, a):
         return NotImplemented
