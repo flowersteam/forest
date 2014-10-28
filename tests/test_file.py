@@ -22,7 +22,7 @@ class TestFiles(unittest.TestCase):
         tc.a.b = 1
         tc.a.d = [1, 2, 3]
 
-        self.assertEqual(tc.__str__(), 'a.b=1\na.d=[1, 2, 3]')
+        self.assertTrue(tc.__str__() in ['a.b=1\na.d=[1, 2, 3]', 'a.d=[1, 2, 3]\na.b=1'])
 
     def test_save(self):
         tc = forest.Tree()
@@ -36,7 +36,8 @@ class TestFiles(unittest.TestCase):
         with open(filename, 'r') as f:
             s = f.read()
 
-        self.assertEqual(s, 'a.b=\'1\'\na.d=[1, 2, 3]')
+        print(s)
+        self.assertTrue(s in ["a.b='1'\na.d=[1, 2, 3]", "a.d=[1, 2, 3]\na.b='1'"])
         os.unlink(filename)
 
     def test_load(self):
@@ -45,7 +46,7 @@ class TestFiles(unittest.TestCase):
             s = f.write('a.b=1\na.d=[1, 2, 3]')
         tc = forest.Tree._from_file(filename)
 
-        self.assertEqual(tc.__str__(), 'a.b=1\na.d=[1, 2, 3]')
+        self.assertTrue(tc.__str__() in ['a.b=1\na.d=[1, 2, 3]', 'a.d=[1, 2, 3]\na.b=1'])
 
         os.unlink(filename)
 
@@ -77,10 +78,10 @@ class TestPickle(unittest.TestCase):
         self.assertEqual(t, t2)
 
         filename = tempname()
-        with open(filename, 'w') as f:
+        with open(filename, 'wb') as f:
             pickle.dump(t, f)
 
-        with open(filename, 'r') as f:
+        with open(filename, 'rb') as f:
             t2 = pickle.load(f)
 
         self.assertEqual(t, t2)
