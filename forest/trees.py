@@ -114,7 +114,7 @@ class Tree(object):
         else:
             return self._branches_[path[0]]._history(path[1])
 
-    def _branch(self, name, value=None, overwrite=False, nested=True):
+    def _branch(self, name, value=None, overwrite=False, nested=True, strict=None):
         """\
         Create a new branch in the tree if it does not already exists.
         Can create nested branches.
@@ -150,7 +150,9 @@ class Tree(object):
                 if len(path) == 1 and value is not None:
                     self._branches_[path[0]] = value
                 else:
-                    self._branches_[path[0]] = Tree(strict=self._strict_)
+                    if strict is None:
+                        strict = self._strict_
+                    self._branches_[path[0]] = Tree(strict=strict)
         if len(path) == 2:
             self._branches_[path[0]]._branch(path[1], value=value, overwrite=overwrite, nested=nested)
 
@@ -586,7 +588,7 @@ class Tree(object):
 
     def _lines(self):
         lines = []
-        for key, value in self._items():
+        for key, value in sorted(self._items()):
             try:
                 r = value.__repr__()
             except (AttributeError, TypeError):
@@ -617,11 +619,11 @@ class Tree(object):
 
     def _children_keys(self):
         """Return only the immediate children names (branches and leaves)"""
-        return (key for key, value in self._items())
+        return (key for key, value in self._children_items())
 
     def _children_values(self):
         """Return only the immediate children names (branches and leaves)"""
-        return (value for key, value in self._items())
+        return (value for key, value in self._children_items())
 
     def _children_items(self):
         """Return only the immediate children names (branches and leaves)"""
@@ -641,4 +643,3 @@ class Tree(object):
 
     def __gt__(self, a):
         return NotImplemented
-
