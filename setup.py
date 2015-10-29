@@ -1,14 +1,17 @@
 from setuptools import setup
 
-setup(name='forest',
-      version='1.0',
-      author='Fabien Benureau',
-      author_email='fabien.benureau+forest@gmail.com',
-      url='flowers.inria.fr',
-      maintainer='Fabien Benureau',
-      license='LGPLv3',
-      packages=['forest'],
-      description='A python hierarchical configuration structure for scientific experiments',
+import versioneer
+
+setup(name         = 'forest',
+      version      = '1.0',
+      cmdclass     = versioneer.get_cmdclass(),
+      author       = 'Fabien Benureau',
+      author_email = 'fabien.benureau+forest@gmail.com',
+      url          = 'github.com/humm/forest.git',
+      maintainer   = 'Fabien C. Y. Benureau',
+      license      = 'LGPLv3',
+      packages     = ['forest'],
+      description  ='A python hierarchical configuration structure for scientific experiments',
       classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
